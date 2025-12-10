@@ -60,27 +60,7 @@ const styles = StyleSheet.create({
 });
 
 const ALL_COMMUNES = [
-  "Xã Bảo Thuận",
-  "Xã Lộc Ngãi",
-  "Xã Lộc Đức",
-  "Xã Đinh Trang Thượng",
-  "Xã Lộc An",
-  "Xã Mỹ Lâm",
-  "Xã Hòa Ninh",
-  "Xã Hòa Nam",
-  "Xã Tân Nghĩa",
-  "Xã Tân Lâm",
-  "Xã Liên Đầm",
-  "Xã Gia Lâm",
-  "Xã Phú Hội",
-  "Xã Tân Hội",
-  "Xã Tân Hà",
-  "Xã Phú Sơn",
-  "Xã Lộc Bắc",
-  "Xã Lộc Bảo",
-  "Xã Lộc Phú",
-  "Xã Lộc Tân",
-  "Xã Lộc Quảng",
+  "Hòa Thắng",
 ];
 
 const MapScreen = () => {

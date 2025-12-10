@@ -79,12 +79,12 @@ function ContactsStack() {
           title: 'Công an tỉnh Lâm Đồng',
           headerRight: () => (
             <>
-              <TouchableOpacity
+              {/* <TouchableOpacity
                 style={styles.importButton}
                 onPress={() => setImportModalVisible(true)}
               >
                 <Text style={styles.importButtonText}>Import Test Data</Text>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
 
               <Modal
                 animationType="fade"
