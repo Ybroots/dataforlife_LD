@@ -10,7 +10,7 @@ import {
   where,
   writeBatch
 } from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { db } from '../config/firebase.local';
 import { Contact, CreateContactData } from '../models/Contact';
 
 const COLLECTION_NAME = 'contacts';

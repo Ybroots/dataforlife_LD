@@ -12,7 +12,7 @@ import {
   WriteBatch,
   writeBatch
 } from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { db } from '../config/firebase.local';
 import { Commune, CreateCommuneData } from '../models/Commune';
 
 const COLLECTION_NAME = 'communes';
