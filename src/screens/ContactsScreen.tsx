@@ -121,6 +121,15 @@ const ContactsScreen = () => {
         // Lấy ten_tinh: tìm từ tất cả contacts trong nhóm, ưu tiên contact có communeInfo đầy đủ
         const contactWithTenTinh = sameMaXaContacts.find(c => c.communeInfo?.ten_tinh) || item;
         const tenTinh = contactWithTenTinh?.communeInfo?.ten_tinh || item.communeInfo?.ten_tinh || '';
+        // Lấy cap từ communeInfo để kiểm tra có hiển thị nút chi tiết không
+        // Tìm contact có communeInfo với cap được định nghĩa
+        const contactWithCap = sameMaXaContacts.find(c => c.communeInfo && c.communeInfo.cap !== undefined) || item;
+        const capValue = contactWithCap?.communeInfo?.cap;
+        // Convert cap sang number để so sánh (có thể là string hoặc number)
+        const cap = capValue !== undefined ? Number(capValue) : undefined;
+        // Kiểm tra có communeInfo không (nếu không có thì là phòng ban/số điện thoại chung, không hiển thị nút)
+        const communeInfo = contactWithCap?.communeInfo || item.communeInfo;
+        const hasCommuneInfo = !!communeInfo;
 
         const normalizePhone = (mobile: string) => mobile.replace(/\./g, '').replace(/\-/g, '').replace(/\s/g, '');
 
@@ -178,11 +187,13 @@ const ContactsScreen = () => {
                             </Text>
                         </View>
                     </View>
-                    <View style={styles.rightActions}>
-                        <TouchableOpacity onPress={handleViewDetail}>
-                            <AntDesign name="right-circle" size={20} color="red" />
-                        </TouchableOpacity>
-                    </View>
+                    {hasCommuneInfo && cap !== 1 && (
+                        <View style={styles.rightActions}>
+                            <TouchableOpacity onPress={handleViewDetail}>
+                                <AntDesign name="right-circle" size={20} color="red" />
+                            </TouchableOpacity>
+                        </View>
+                    )}
                 </View>
                 
                 {isExpanded && (
