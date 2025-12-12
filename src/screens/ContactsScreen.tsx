@@ -161,8 +161,14 @@ const ContactsScreen = () => {
         };
 
         const handleViewDetail = () => {
-            if (item.communeInfo) {
-                navigation.navigate('CommuneDetail', { communeInfo: item.communeInfo });
+            // Lấy communeInfo từ contact có communeInfo đầy đủ trong nhóm
+            const contactWithCommuneInfo = sameMaXaContacts.find(c => c.communeInfo) || item;
+            const communeInfoToShow = contactWithCommuneInfo?.communeInfo || communeInfo;
+            
+            if (communeInfoToShow) {
+                navigation.navigate('CommuneDetail', { communeInfo: communeInfoToShow });
+            } else {
+                Alert.alert('Thông báo', 'Không có thông tin chi tiết cho xã này');
             }
         };
 
