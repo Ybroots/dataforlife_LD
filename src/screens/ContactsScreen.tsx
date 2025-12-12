@@ -63,12 +63,26 @@ const ContactsScreen = () => {
         );
     };
 
-    const filteredContacts = contacts.filter((contact) =>
-        contact.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (contact.communeInfo?.ma_xa || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (contact.communeInfo?.ten_xa || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (contact.communeInfo?.ten_tinh || '').toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredContacts = contacts
+        .filter((contact) =>
+            contact.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (contact.communeInfo?.ma_xa || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (contact.communeInfo?.ten_xa || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (contact.communeInfo?.ten_tinh || '').toLowerCase().includes(searchQuery.toLowerCase())
+        )
+        .sort((a, b) => {
+            // Ưu tiên các contacts có ma_xa chứa "EMERGENCY" lên đầu
+            const aIsEmergency = String(a.ma_xa || '').toUpperCase().includes('EMERGENCY');
+            const bIsEmergency = String(b.ma_xa || '').toUpperCase().includes('EMERGENCY');
+            
+            if (aIsEmergency && !bIsEmergency) return -1;
+            if (!aIsEmergency && bIsEmergency) return 1;
+            
+            // Nếu cùng loại (cả hai đều EMERGENCY hoặc không), sắp xếp theo ten_xa
+            const aTenXa = a.ten_xa || a.communeInfo?.ten_xa || '';
+            const bTenXa = b.ten_xa || b.communeInfo?.ten_xa || '';
+            return aTenXa.localeCompare(bTenXa, 'vi');
+        });
 
     // Group contacts theo ma_xa để hiển thị khi expand
     const contactsByMaXa = useMemo(() => {
