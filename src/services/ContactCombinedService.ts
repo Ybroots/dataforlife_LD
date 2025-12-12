@@ -27,6 +27,7 @@ export class ContactCombinedService {
       const contactsWithCommunes: ContactWithCommune[] = contacts.map(contact => ({
         id: contact.id,
         ma_xa: contact.ma_xa,
+        ten_xa: contact.ten_xa,  // Lưu ten_xa từ Contact
         fullName: contact.chief,
         mobile: contact.mobile,
         communeInfo: communeMap.get(contact.ma_xa) || null,
@@ -57,6 +58,7 @@ export class ContactCombinedService {
       return {
         id: contact.id,
         ma_xa: contact.ma_xa,
+        ten_xa: contact.ten_xa,  // Lưu ten_xa từ Contact
         fullName: contact.chief,
         mobile: contact.mobile,
         communeInfo: commune,
@@ -86,6 +88,7 @@ export class ContactCombinedService {
       return {
         id: contact.id,
         ma_xa: contact.ma_xa,
+        ten_xa: contact.ten_xa,  // Lưu ten_xa từ Contact
         fullName: contact.chief,
         mobile: contact.mobile,
         communeInfo: commune,

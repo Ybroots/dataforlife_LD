@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, TextInput, Linking, ImageBackground, ActivityIndicator, Alert } from 'react-native';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import Feather from '@expo/vector-icons/Feather';
@@ -6,6 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { getAllContactsWithCommunes, deleteContact } from '../services';
 import type { ContactWithCommune } from '../models';
+import Contacts from 'react-native-contacts';
 
 type RootStackParamList = {
     ContactsList: undefined;
@@ -69,6 +70,37 @@ const ContactsScreen = () => {
         (contact.communeInfo?.ten_tinh || '').toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    // Group contacts theo ma_xa để hiển thị khi expand
+    const contactsByMaXa = useMemo(() => {
+        const grouped = new Map<string, ContactWithCommune[]>();
+        contacts.forEach((contact) => {
+            // Normalize ma_xa: convert sang string, trim và đảm bảo không null/undefined
+            const maXa = String(contact.ma_xa || '').trim() || 'unknown';
+            if (!grouped.has(maXa)) {
+                grouped.set(maXa, []);
+            }
+            grouped.get(maXa)!.push(contact);
+        });
+        
+        // // Debug: Log số lượng contacts theo từng ma_xa
+        // if (__DEV__) {
+        //     grouped.forEach((contacts, maXa) => {
+        //         if (contacts.length > 0) {
+        //             console.log(`ma_xa: ${maXa}, số lượng contacts: ${contacts.length}`);
+        //         }
+        //     });
+        // }
+        
+        return grouped;
+    }, [contacts]);
+
+    const ensureContactsPermission = async () => {
+        const status = await Contacts.checkPermission();
+        if (status === 'authorized') return true;
+        const requested = await Contacts.requestPermission();
+        return requested === 'authorized';
+    };
+
     if (loading) {
         return (
             <View style={[styles.container, styles.centerContent]}>
@@ -80,11 +112,43 @@ const ContactsScreen = () => {
 
     const renderItem = ({ item }: { item: ContactWithCommune }) => {
         const isExpanded = item.id === expandedId;
+        // Lấy tất cả contacts có cùng ma_xa (normalize để đảm bảo khớp)
+        const maXa = String(item.ma_xa || '').trim() || 'unknown';
+        const sameMaXaContacts = contactsByMaXa.get(maXa) || [];
+        // Lấy ten_xa: ưu tiên từ Contact.ten_xa, sau đó từ communeInfo.ten_xa
+        const firstContactWithTenXa = sameMaXaContacts.find(c => c.ten_xa || c.communeInfo?.ten_xa) || sameMaXaContacts[0] || item;
+        const tenXa = firstContactWithTenXa?.ten_xa || firstContactWithTenXa?.communeInfo?.ten_xa || item.ten_xa || item.communeInfo?.ten_xa || '';
+        // Lấy ten_tinh: tìm từ tất cả contacts trong nhóm, ưu tiên contact có communeInfo đầy đủ
+        const contactWithTenTinh = sameMaXaContacts.find(c => c.communeInfo?.ten_tinh) || item;
+        const tenTinh = contactWithTenTinh?.communeInfo?.ten_tinh || item.communeInfo?.ten_tinh || '';
+
+        const normalizePhone = (mobile: string) => mobile.replace(/\./g, '').replace(/\-/g, '').replace(/\s/g, '');
 
         const handleCall = (mobile: string | null | undefined) => {
             if (!mobile) return;
-            const phoneNumber = mobile.replace(/\./g, '').replace(/\-/g, '').replace(/\s/g, '');
+            const phoneNumber = normalizePhone(mobile);
             Linking.openURL(`tel:${phoneNumber}`);
+        };
+
+        const handleSaveContact = async (contact: ContactWithCommune) => {
+            const allowed = await ensureContactsPermission();
+            if (!allowed) {
+                Alert.alert('Cần quyền Danh bạ', 'Vui lòng cho phép quyền Danh bạ để lưu số.');
+                return;
+            }
+
+            const phoneNumber = contact.mobile ? normalizePhone(contact.mobile) : undefined;
+            const displayName = contact.fullName || contact.communeInfo?.name || 'Liên hệ';
+
+            try {
+                await Contacts.openContactForm({
+                    givenName: displayName,
+                    phoneNumbers: phoneNumber ? [{ label: 'mobile', number: phoneNumber }] : [],
+                });
+            } catch (error) {
+                console.error('Error opening save contact', error);
+                Alert.alert('Lỗi', 'Không thể mở màn hình lưu số');
+            }
         };
 
         const handleViewDetail = () => {
@@ -108,12 +172,10 @@ const ContactsScreen = () => {
                             style={styles.icon} 
                         />
                         <View style={styles.textContainer}>
-                            <Text style={styles.name}>{item.communeInfo?.name}</Text>
-                            {item.communeInfo && (
-                                <Text style={styles.addressPreview} numberOfLines={1}>
-                                    {item.communeInfo.ten_xa}, {item.communeInfo.ten_tinh}
-                                </Text>
-                            )}
+                            <Text style={styles.name}>{`${tenXa}`}</Text>
+                            <Text style={styles.addressPreview} numberOfLines={1}>
+                                {tenXa ? (tenTinh ? `${tenXa}, ${tenTinh}` : tenXa) : ''}
+                            </Text>
                         </View>
                     </View>
                     <View style={styles.rightActions}>
@@ -125,23 +187,42 @@ const ContactsScreen = () => {
                 
                 {isExpanded && (
                     <View style={styles.infoContainer}>
-                        {/* Thông tin người đứng đầu và điện thoại */}
-                        <View style={styles.chiefContainer}>
-                            <View style={styles.chiefInfo}>
-                                <Text style={styles.chiefName}>{item.fullName}</Text>
-                                {item.mobile && (
-                                    <Text style={styles.phoneNumber}>{item.mobile}</Text>
+                        {/* Hiển thị tất cả contacts có cùng ma_xa */}
+                        {sameMaXaContacts.length > 0 && (
+                            <>
+                                {tenXa && (
+                                    <Text style={styles.sectionTitle}>
+                                        {tenXa} ({sameMaXaContacts.length})
+                                    </Text>
                                 )}
-                            </View>
-                            {item.mobile && (
-                                <TouchableOpacity 
-                                    onPress={() => handleCall(item.mobile)}
-                                    style={styles.phoneIconButton}
-                                >
-                                    <Feather name="phone" size={24} color="red" style={{ transform: [{ scaleX: -1 }] }} />
-                                </TouchableOpacity>
-                            )}
-                        </View>
+                                {sameMaXaContacts.map((contact, index) => (
+                                    <View key={contact.id || index} style={styles.contactItem}>
+                                        <View style={styles.chiefContainer}>
+                                            <View style={styles.chiefInfo}>
+                                                <View style={styles.nameRow}>
+                                                    <Text style={styles.chiefName}>{contact.fullName || 'Chưa có tên'}</Text>
+                                                </View>
+                                                {contact.mobile ? (
+                                                    <Text style={styles.phoneNumber}>{contact.mobile}</Text>
+                                                ) : (
+                                                    <Text style={styles.noPhoneText}>Chưa có số điện thoại</Text>
+                                                )}
+                                            </View>
+                                            {contact.mobile && (
+                                                <View style={styles.actionButtons}>
+                                                    <TouchableOpacity 
+                                                        onPress={() => handleCall(contact.mobile)}
+                                                        style={styles.phoneIconButton}
+                                                    >
+                                                        <Feather name="phone" size={24} color="red" style={{ transform: [{ scaleX: -1 }] }} />
+                                                    </TouchableOpacity>
+                                                </View>
+                                            )}
+                                        </View>
+                                    </View>
+                                ))}
+                            </>
+                        )}
                     </View>
                 )}
             </TouchableOpacity>
@@ -344,6 +425,39 @@ const styles = StyleSheet.create({
     emptyText: {
         fontSize: 16,
         color: '#999',
+    },
+    contactItem: {
+        marginBottom: 12,
+        paddingBottom: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#e0e0e0',
+    },
+    actionButtons: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    saveIconButton: {
+        padding: 8,
+        marginLeft: 4,
+    },
+    nameRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    contactLabel: {
+        fontSize: 12,
+        color: '#dc3545',
+        backgroundColor: '#ffe0e0',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 4,
+        fontWeight: '600',
+    },
+    noPhoneText: {
+        fontSize: 13,
+        color: '#999',
+        fontStyle: 'italic',
     },
 });
 

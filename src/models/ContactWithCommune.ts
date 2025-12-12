@@ -7,6 +7,7 @@ import { Contact } from './Contact';
 export interface ContactWithCommune {
   id: string;
   ma_xa: string;
+  ten_xa?: string;  // ten_xa từ Contact model
   fullName: string;  // chief name
   mobile?: string | null;
   communeInfo?: Commune | null;
