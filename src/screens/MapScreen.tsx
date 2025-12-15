@@ -14,8 +14,8 @@ import MapView, {
   Region,
 } from "react-native-maps";
 import AntDesign from "@expo/vector-icons/AntDesign";
-// @ts-ignore – cho phép import file JSON lớn
-import mapData from "../../map.json";
+// @ts-ignore – cho phép import file GeoJSON lớn
+import mapData from "../../map34.json";
 
 const styles = StyleSheet.create({
   container: {
@@ -43,6 +43,17 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
 
+  searchWrapper: {
+    position: "relative",
+    marginTop: 10,
+  },
+
+  clearButton: {
+    position: 'absolute',
+    right: 12,
+    top: 16,
+  },
+
   searchInput: {
     backgroundColor: "#fff",
     borderWidth: 1,
@@ -50,7 +61,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    marginTop: 10,
+    height: 50,
   },
 
   dropdownList: {
@@ -89,27 +100,38 @@ type GeoJSONFeature = {
 type CommunePolygon = {
   id: string;
   name: string;
-  coordinates: LatLng[];
+  // Một xã có thể gồm nhiều polygon (MultiPolygon)
+  coordinates: LatLng[][];
   properties?: { [key: string]: any };
 };
 
 const rawFeatures = (mapData as any).features as GeoJSONFeature[];
 
-const COMMUNE_POLYGONS: CommunePolygon[] = rawFeatures.map(
-  (feature, index) => {
+const COMMUNE_POLYGONS: CommunePolygon[] = rawFeatures
+  .map((feature, index) => {
     const { geometry, properties } = feature;
 
-    // Lấy vòng polygon chính (ring đầu tiên)
-    const rawCoords =
-      geometry.type === "Polygon"
-        ? (geometry.coordinates as number[][][])[0]
-        : ((geometry.coordinates as number[][][][])[0] ?? [])[0];
+    let coordinates: LatLng[][] = [];
 
-    const coordinates: LatLng[] =
-      rawCoords?.map(([lng, lat]) => ({
-        latitude: lat,
-        longitude: lng,
-      })) ?? [];
+    if (geometry.type === "Polygon") {
+      const rings = geometry.coordinates as number[][][];
+      const outerRing = rings[0] ?? [];
+      coordinates = [
+        outerRing.map(([lng, lat]) => ({
+          latitude: lat,
+          longitude: lng,
+        })),
+      ];
+    } else if (geometry.type === "MultiPolygon") {
+      const polys = geometry.coordinates as number[][][][];
+      coordinates = polys.map((poly) => {
+        const outerRing = poly[0] ?? [];
+        return outerRing.map(([lng, lat]) => ({
+          latitude: lat,
+          longitude: lng,
+        }));
+      });
+    }
 
     const name =
       (properties && (properties.ten_xa || properties.name)) ||
@@ -126,8 +148,8 @@ const COMMUNE_POLYGONS: CommunePolygon[] = rawFeatures.map(
       coordinates,
       properties,
     };
-  }
-).filter((c) => c.coordinates.length > 0);
+  })
+  .filter((c) => c.coordinates.length > 0);
 
 const ALL_COMMUNES = COMMUNE_POLYGONS.map((c) => c.name);
 
@@ -158,8 +180,11 @@ const MapScreen = () => {
   const focusOnCommune = (commune: CommunePolygon) => {
     if (commune.coordinates.length === 0 || !mapRef.current) return;
 
-    const lats = commune.coordinates.map((p) => p.latitude);
-    const lngs = commune.coordinates.map((p) => p.longitude);
+    const allPoints = commune.coordinates.flat();
+    if (allPoints.length === 0) return;
+
+    const lats = allPoints.map((p) => p.latitude);
+    const lngs = allPoints.map((p) => p.longitude);
 
     const minLat = Math.min(...lats);
     const maxLat = Math.max(...lats);
@@ -201,12 +226,22 @@ const MapScreen = () => {
         {/* Ô tìm kiếm */}
         {open && (
           <>
-            <TextInput
-              placeholder="Tìm kiếm xã/phường..."
-              style={styles.searchInput}
-              value={keyword}
-              onChangeText={setKeyword}
-            />
+            <View style={styles.searchWrapper}>
+              <TextInput
+                placeholder="Tìm kiếm xã/phường..."
+                style={styles.searchInput}
+                value={keyword}
+                onChangeText={setKeyword}
+              />
+              {keyword.length > 0 && (
+                <TouchableOpacity
+                  style={styles.clearButton}
+                  onPress={() => setKeyword("")}
+                >
+                  <AntDesign name="close-circle" size={16} color="#999" />
+                </TouchableOpacity>
+              )}
+            </View>
 
             {/* Danh sách */}
             <View style={styles.dropdownList}>
@@ -234,17 +269,18 @@ const MapScreen = () => {
         style={{ flex: 1 }}
         initialRegion={initialRegion}
       >
-        {selectedCommune && (
-          <Polygon
-            key={selectedCommune.id}
-            coordinates={selectedCommune.coordinates}
-            tappable
-            strokeWidth={2}
-            strokeColor="#ffffff"
-            fillColor="rgba(255, 87, 34, 0.55)"
-            onPress={() => handleSelectCommune(selectedCommune)}
-          />
-        )}
+        {selectedCommune &&
+          selectedCommune.coordinates.map((ring, idx) => (
+            <Polygon
+              key={`${selectedCommune.id}-${idx}`}
+              coordinates={ring}
+              tappable
+              strokeWidth={2}
+              strokeColor="#ffffff"
+              fillColor="rgba(255, 87, 34, 0.55)"
+              onPress={() => handleSelectCommune(selectedCommune)}
+            />
+          ))}
       </MapView>
     </View>
   );
