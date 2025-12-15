@@ -4,7 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { StatusBar } from 'react-native';
+import { StatusBar, View, Text, Image } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import ContactsScreen from './src/screens/ContactsScreen';
@@ -46,7 +46,19 @@ function ContactsStack() {
         name="ContactsList"
         component={ContactsScreen}
         options={{
-          title: 'Công an tỉnh Lâm Đồng',
+          headerTitle: () => (
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Image
+                source={require('./assets/images/logo.png')}
+                style={{ width: 30, height: 30, marginRight: 8, borderRadius: 6 }}
+                resizeMode="contain"
+              />
+              <Text style={{ color: '#fff', fontSize: 18, fontWeight: '600' }}>
+                Công an tỉnh Lâm Đồng
+              </Text>
+            </View>
+          ),
+          headerTitleAlign: 'left',
         }}
       />
 

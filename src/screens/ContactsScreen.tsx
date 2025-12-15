@@ -63,26 +63,51 @@ const ContactsScreen = () => {
         );
     };
 
-    const filteredContacts = contacts
-        .filter((contact) =>
-            contact.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (contact.communeInfo?.ma_xa || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (contact.communeInfo?.ten_xa || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (contact.communeInfo?.ten_tinh || '').toLowerCase().includes(searchQuery.toLowerCase())
-        )
-        .sort((a, b) => {
-            // Ưu tiên các contacts có ma_xa chứa "EMERGENCY" lên đầu
+    // Danh sách hiển thị: 1 item / ma_xa, sort EMERGENCY* lên đầu
+    const filteredContacts = useMemo(() => {
+        // Group toàn bộ contacts theo ma_xa
+        const grouped = new Map<string, ContactWithCommune[]>();
+        contacts.forEach((contact) => {
+            const maXa = String(contact.ma_xa || '').trim() || 'unknown';
+            if (!grouped.has(maXa)) grouped.set(maXa, []);
+            grouped.get(maXa)!.push(contact);
+        });
+
+        const query = searchQuery.toLowerCase();
+
+        // Từ mỗi nhóm ma_xa, chọn 1 contact đại diện để hiển thị
+        const groupsAsContacts: ContactWithCommune[] = [];
+
+        grouped.forEach((group, maXa) => {
+            if (group.length === 0) return;
+
+            // Kiểm tra group có match search không (theo tên, mã xã, tên xã, tên tỉnh)
+            const matchesGroup = group.some((c) =>
+                c.fullName.toLowerCase().includes(query) ||
+                String(c.ma_xa || '').toLowerCase().includes(query) ||
+                (c.ten_xa || c.communeInfo?.ten_xa || '').toLowerCase().includes(query) ||
+                (c.communeInfo?.ten_tinh || '').toLowerCase().includes(query)
+            );
+
+            if (!matchesGroup && query.length > 0) return;
+
+            // Chọn bản ghi đầu tiên làm đại diện
+            groupsAsContacts.push(group[0]);
+        });
+
+        // Sort: EMERGENCY* lên đầu, sau đó theo tên xã
+        return groupsAsContacts.sort((a, b) => {
             const aIsEmergency = String(a.ma_xa || '').toUpperCase().includes('EMERGENCY');
             const bIsEmergency = String(b.ma_xa || '').toUpperCase().includes('EMERGENCY');
-            
+
             if (aIsEmergency && !bIsEmergency) return -1;
             if (!aIsEmergency && bIsEmergency) return 1;
-            
-            // Nếu cùng loại (cả hai đều EMERGENCY hoặc không), sắp xếp theo ten_xa
+
             const aTenXa = a.ten_xa || a.communeInfo?.ten_xa || '';
             const bTenXa = b.ten_xa || b.communeInfo?.ten_xa || '';
             return aTenXa.localeCompare(bTenXa, 'vi');
         });
+    }, [contacts, searchQuery]);
 
     // Group contacts theo ma_xa để hiển thị khi expand
     const contactsByMaXa = useMemo(() => {
