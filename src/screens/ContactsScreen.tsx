@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, TextInput, Linking, ImageBackground, ActivityIndicator, Alert } from 'react-native';
 import AntDesign from '@expo/vector-icons/AntDesign';
@@ -6,7 +7,6 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { getAllContactsWithCommunes, deleteContact } from '../services';
 import type { ContactWithCommune } from '../models';
-import Contacts from 'react-native-contacts';
 
 type RootStackParamList = {
     ContactsList: undefined;
@@ -133,13 +133,6 @@ const ContactsScreen = () => {
         return grouped;
     }, [contacts]);
 
-    const ensureContactsPermission = async () => {
-        const status = await Contacts.checkPermission();
-        if (status === 'authorized') return true;
-        const requested = await Contacts.requestPermission();
-        return requested === 'authorized';
-    };
-
     if (loading) {
         return (
             <View style={[styles.container, styles.centerContent]}>
@@ -176,27 +169,6 @@ const ContactsScreen = () => {
             if (!mobile) return;
             const phoneNumber = normalizePhone(mobile);
             Linking.openURL(`tel:${phoneNumber}`);
-        };
-
-        const handleSaveContact = async (contact: ContactWithCommune) => {
-            const allowed = await ensureContactsPermission();
-            if (!allowed) {
-                Alert.alert('Cần quyền Danh bạ', 'Vui lòng cho phép quyền Danh bạ để lưu số.');
-                return;
-            }
-
-            const phoneNumber = contact.mobile ? normalizePhone(contact.mobile) : undefined;
-            const displayName = contact.fullName || contact.communeInfo?.name || 'Liên hệ';
-
-            try {
-                await Contacts.openContactForm({
-                    givenName: displayName,
-                    phoneNumbers: phoneNumber ? [{ label: 'mobile', number: phoneNumber }] : [],
-                });
-            } catch (error) {
-                console.error('Error opening save contact', error);
-                Alert.alert('Lỗi', 'Không thể mở màn hình lưu số');
-            }
         };
 
         const handleViewDetail = () => {

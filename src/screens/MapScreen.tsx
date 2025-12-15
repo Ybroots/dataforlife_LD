@@ -1,7 +1,21 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList } from "react-native";
-import { WebView } from "react-native-webview";
+// @ts-nocheck
+import React, { useRef, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  FlatList,
+} from "react-native";
+import MapView, {
+  Polygon,
+  PROVIDER_GOOGLE,
+  Region,
+} from "react-native-maps";
 import AntDesign from "@expo/vector-icons/AntDesign";
+// @ts-ignore – cho phép import file JSON lớn
+import mapData from "../../map.json";
 
 const styles = StyleSheet.create({
   container: {
@@ -59,35 +73,115 @@ const styles = StyleSheet.create({
   },
 });
 
-const ALL_COMMUNES = [
-  "Hòa Thắng",
-];
+type LatLng = { latitude: number; longitude: number };
+
+type GeoJSONFeature = {
+  geometry: {
+    type: "Polygon" | "MultiPolygon";
+    // GeoJSON dùng [lng, lat]
+    coordinates: number[][][] | number[][][][];
+  };
+  properties?: {
+    [key: string]: any;
+  };
+};
+
+type CommunePolygon = {
+  id: string;
+  name: string;
+  coordinates: LatLng[];
+  properties?: { [key: string]: any };
+};
+
+const rawFeatures = (mapData as any).features as GeoJSONFeature[];
+
+const COMMUNE_POLYGONS: CommunePolygon[] = rawFeatures.map(
+  (feature, index) => {
+    const { geometry, properties } = feature;
+
+    // Lấy vòng polygon chính (ring đầu tiên)
+    const rawCoords =
+      geometry.type === "Polygon"
+        ? (geometry.coordinates as number[][][])[0]
+        : ((geometry.coordinates as number[][][][])[0] ?? [])[0];
+
+    const coordinates: LatLng[] =
+      rawCoords?.map(([lng, lat]) => ({
+        latitude: lat,
+        longitude: lng,
+      })) ?? [];
+
+    const name =
+      (properties && (properties.ten_xa || properties.name)) ||
+      `Xã ${index + 1}`;
+
+    const id =
+      (properties &&
+        (properties.ma_xa || properties.id || properties.code))?.toString() ??
+      String(index);
+
+    return {
+      id,
+      name,
+      coordinates,
+      properties,
+    };
+  }
+).filter((c) => c.coordinates.length > 0);
+
+const ALL_COMMUNES = COMMUNE_POLYGONS.map((c) => c.name);
 
 const MapScreen = () => {
-  const myMapUrl =
-    "https://www.google.com/maps/d/u/0/viewer?mid=1ZB99i3agA0Wc0QqlquYLGWbEMfLGUZM&usp=sharing";
+  const mapRef = useRef<MapView | null>(null);
+
+  // Tính region khởi tạo từ polygon đầu tiên
+  const firstPolygon = COMMUNE_POLYGONS[0];
+  const firstPoint = firstPolygon?.coordinates[0];
+
+  const initialRegion: Region = {
+    latitude: firstPoint?.latitude ?? 11.6,
+    longitude: firstPoint?.longitude ?? 107.7,
+    latitudeDelta: 0.6,
+    longitudeDelta: 0.6,
+  };
 
   const [open, setOpen] = useState(false);
   const [keyword, setKeyword] = useState("");
   const [selected, setSelected] = useState("Chọn xã/phường");
+  const [selectedCommune, setSelectedCommune] =
+    useState<CommunePolygon | null>(null);
 
-  const filteredList = ALL_COMMUNES.filter((x) =>
-    x.toLowerCase().includes(keyword.toLowerCase())
-  ).slice(0, 10); // LIMIT 10
+  const filteredList = COMMUNE_POLYGONS.filter((c) =>
+    c.name.toLowerCase().includes(keyword.toLowerCase())
+  ).slice(0, 20); // LIMIT 20
 
-  // Chặn mở trang Google
-  const handleShouldStartLoadWithRequest = (request: any) => {
-    if (
-      request.url.includes("google.com/maps/d") &&
-      request.url.includes("1ZB99i3agA0Wc0QqlquYLGWbEMfLGUZM")
-    ) {
-      return true;
-    }
-    return false;
+  const focusOnCommune = (commune: CommunePolygon) => {
+    if (commune.coordinates.length === 0 || !mapRef.current) return;
+
+    const lats = commune.coordinates.map((p) => p.latitude);
+    const lngs = commune.coordinates.map((p) => p.longitude);
+
+    const minLat = Math.min(...lats);
+    const maxLat = Math.max(...lats);
+    const minLng = Math.min(...lngs);
+    const maxLng = Math.max(...lngs);
+
+    const region: Region = {
+      latitude: (minLat + maxLat) / 2,
+      longitude: (minLng + maxLng) / 2,
+      latitudeDelta: (maxLat - minLat) * 1.5 || 0.05,
+      longitudeDelta: (maxLng - minLng) * 1.5 || 0.05,
+    };
+
+    mapRef.current.animateToRegion(region, 500);
   };
 
-  // CSS inject ẩn Google elements
-  const injectedJavaScript = ` ... giữ nguyên như code bạn gửi ... `;
+  const handleSelectCommune = (commune: CommunePolygon) => {
+    setSelected(commune.name);
+    setSelectedCommune(commune);
+    setOpen(false);
+    focusOnCommune(commune);
+  };
 
   return (
     <View style={styles.container}>
@@ -118,16 +212,13 @@ const MapScreen = () => {
             <View style={styles.dropdownList}>
               <FlatList
                 data={filteredList}
-                keyExtractor={(item) => item}
+                keyExtractor={(item) => item.id}
                 renderItem={({ item }) => (
                   <TouchableOpacity
                     style={styles.item}
-                    onPress={() => {
-                      setSelected(item);
-                      setOpen(false);
-                    }}
+                    onPress={() => handleSelectCommune(item)}
                   >
-                    <Text style={styles.itemText}>{item}</Text>
+                    <Text style={styles.itemText}>{item.name}</Text>
                   </TouchableOpacity>
                 )}
               />
@@ -136,16 +227,31 @@ const MapScreen = () => {
         )}
       </View>
 
-      {/* WebView map */}
-      <WebView
-        source={{ uri: myMapUrl }}
+      {/* Bản đồ với polygon */}
+      <MapView
+        ref={mapRef}
+        provider={PROVIDER_GOOGLE}
         style={{ flex: 1 }}
-        injectedJavaScript={injectedJavaScript}
-        javaScriptEnabled={true}
-        onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
-        originWhitelist={["https://www.google.com"]}
-        allowsBackForwardNavigationGestures={false}
-      />
+        initialRegion={initialRegion}
+      >
+        {COMMUNE_POLYGONS.map((commune) => (
+          <Polygon
+            key={commune.id}
+            coordinates={commune.coordinates}
+            tappable
+            strokeWidth={2}
+            strokeColor={
+              selectedCommune?.id === commune.id ? "#ffffff" : "#FF5722"
+            }
+            fillColor={
+              selectedCommune?.id === commune.id
+                ? "rgba(255, 87, 34, 0.55)"
+                : "rgba(255, 87, 34, 0.25)"
+            }
+            onPress={() => handleSelectCommune(commune)}
+          />
+        ))}
+      </MapView>
     </View>
   );
 };
