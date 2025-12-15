@@ -153,7 +153,7 @@ const MapScreen = () => {
 
   const filteredList = COMMUNE_POLYGONS.filter((c) =>
     c.name.toLowerCase().includes(keyword.toLowerCase())
-  ).slice(0, 20); // LIMIT 20
+  );
 
   const focusOnCommune = (commune: CommunePolygon) => {
     if (commune.coordinates.length === 0 || !mapRef.current) return;
@@ -227,30 +227,24 @@ const MapScreen = () => {
         )}
       </View>
 
-      {/* Bản đồ với polygon */}
+      {/* Bản đồ với polygon – chỉ hiển thị khi đã chọn xã để tránh lag */}
       <MapView
         ref={mapRef}
         provider={PROVIDER_GOOGLE}
         style={{ flex: 1 }}
         initialRegion={initialRegion}
       >
-        {COMMUNE_POLYGONS.map((commune) => (
+        {selectedCommune && (
           <Polygon
-            key={commune.id}
-            coordinates={commune.coordinates}
+            key={selectedCommune.id}
+            coordinates={selectedCommune.coordinates}
             tappable
             strokeWidth={2}
-            strokeColor={
-              selectedCommune?.id === commune.id ? "#ffffff" : "#FF5722"
-            }
-            fillColor={
-              selectedCommune?.id === commune.id
-                ? "rgba(255, 87, 34, 0.55)"
-                : "rgba(255, 87, 34, 0.25)"
-            }
-            onPress={() => handleSelectCommune(commune)}
+            strokeColor="#ffffff"
+            fillColor="rgba(255, 87, 34, 0.55)"
+            onPress={() => handleSelectCommune(selectedCommune)}
           />
-        ))}
+        )}
       </MapView>
     </View>
   );
