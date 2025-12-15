@@ -207,7 +207,7 @@ const ContactsScreen = () => {
                     {hasCommuneInfo && cap !== 1 && (
                         <View style={styles.rightActions}>
                             <TouchableOpacity onPress={handleViewDetail}>
-                                <AntDesign name="right-circle" size={20} color="red" />
+                                <AntDesign name="right-circle" size={24} color="red" />
                             </TouchableOpacity>
                         </View>
                     )}

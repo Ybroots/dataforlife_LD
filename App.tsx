@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { Pressable } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -65,8 +66,18 @@ function ContactsStack() {
       <Stack.Screen
         name="CommuneDetail"
         component={CommuneDetailScreen}
-        options={({ route }) => ({
+        options={({ route, navigation }) => ({
           title: `Chi tiết ${route.params?.communeInfo?.ten_xa || ''}`,
+          headerBackVisible: false,
+
+          headerLeft: () => (
+            <Pressable
+              onPress={() => navigation.goBack()}
+              style={{ paddingRight: 20 }}
+            >
+              <AntDesign name="arrow-left" size={24} color="#fff" />
+            </Pressable>
+          ),
         })}
       />
     </Stack.Navigator>
