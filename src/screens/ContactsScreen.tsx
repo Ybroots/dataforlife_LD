@@ -5,6 +5,7 @@ import AntDesign from '@expo/vector-icons/AntDesign';
 import Feather from '@expo/vector-icons/Feather';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import * as Contacts from 'expo-contacts';
 import { getAllContactsWithCommunes, deleteContact } from '../services';
 import type { ContactWithCommune } from '../models';
 
@@ -211,6 +212,38 @@ const ContactsScreen = () => {
         );
     };
 
+    const handleSaveContact = async (contact: ContactWithCommune) => {
+        if (!contact.mobile) {
+            Alert.alert('Thông báo', 'Liên hệ này chưa có số điện thoại để lưu');
+            return;
+        }
+
+        const { status } = await Contacts.requestPermissionsAsync();
+        if (status !== 'granted') {
+            Alert.alert('Quyền truy cập', 'Ứng dụng cần quyền truy cập danh bạ để lưu liên hệ');
+            return;
+        }
+
+        const normalizePhone = (mobile: string) => mobile.replace(/\./g, '').replace(/\-/g, '').replace(/\s/g, '');
+        const phoneNumber = normalizePhone(contact.mobile);
+
+        try {
+            await Contacts.addContactAsync({
+                [Contacts.Fields.FirstName]: contact.fullName || contact.communeInfo?.ten_xa || 'Liên hệ CA',
+                [Contacts.Fields.Notes]: contact.communeInfo?.ten_tinh
+                    ? `Công an ${contact.communeInfo.ten_tinh}`
+                    : 'Liên hệ Công an địa phương',
+                [Contacts.Fields.PhoneNumbers]: [
+                    { label: 'mobile', number: phoneNumber },
+                ],
+            });
+            Alert.alert('Thành công', 'Đã lưu vào danh bạ điện thoại');
+        } catch (error) {
+            console.error('Error saving contact to phonebook:', error);
+            Alert.alert('Lỗi', 'Không thể lưu liên hệ vào danh bạ');
+        }
+    };
+
     const renderItem = ({ item, isInCategory = false }: { item: ContactWithCommune; isInCategory?: boolean }) => {
         const isExpanded = item.id === expandedId;
         // Lấy tất cả contacts có cùng ma_xa (normalize để đảm bảo khớp)
@@ -313,6 +346,12 @@ const ContactsScreen = () => {
                                                         style={styles.phoneIconButton}
                                                     >
                                                         <Feather name="phone" size={24} color="red" style={{ transform: [{ scaleX: -1 }] }} />
+                                                    </TouchableOpacity>
+                                                    <TouchableOpacity
+                                                        onPress={() => handleSaveContact(contact)}
+                                                        style={styles.saveIconButton}
+                                                    >
+                                                        <Feather name="save" size={22} color="#007AFF" />
                                                     </TouchableOpacity>
                                                 </View>
                                             )}
