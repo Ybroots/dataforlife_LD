@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, TextInput, Linking, ImageBackground, ActivityIndicator, Alert } from 'react-native';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import Feather from '@expo/vector-icons/Feather';
@@ -149,70 +149,11 @@ const ContactsScreen = () => {
         return grouped;
     }, [contacts]);
 
-    if (loading) {
-        return (
-            <View style={[styles.container, styles.centerContent]}>
-                <ActivityIndicator size="large" color="#007AFF" />
-                <Text style={styles.loadingText}>Đang tải...</Text>
-            </View>
-        );
-    }
+    const normalizePhone = useCallback((mobile: string) => {
+        return mobile.replace(/\./g, '').replace(/\-/g, '').replace(/\s/g, '');
+    }, []);
 
-    // Render category header (item lớn)
-    const renderCategoryHeader = (category: string, title: string) => {
-        const isExpanded = expandedCategory === category;
-        const categoryContacts = category === 'tinh' ? contactsByCap.capTinh : 
-                                category === 'phong' ? contactsByCap.capPhong : 
-                                contactsByCap.capXa;
-        const filteredCategoryContacts = getFilteredContactsByCategory(categoryContacts);
-        const displayCount = filteredCategoryContacts.length;
-
-        return (
-            <View style={styles.categoryCard}>
-                <TouchableOpacity
-                    style={styles.categoryHeader}
-                    activeOpacity={0.7}
-                    onPress={() => setExpandedCategory(isExpanded ? null : category)}
-                >
-                    <View style={styles.categoryHeaderLeft}>
-                        <AntDesign 
-                            name={isExpanded ? "down" : "right"} 
-                            size={20} 
-                            color="#dc3545" 
-                            style={styles.categoryIcon} 
-                        />
-                        <Text style={styles.categoryTitle}>{title}</Text>
-                    </View>
-                    {/* Cấp tỉnh không hiển thị số lượng */}
-                    {displayCount > 0 && category !== 'tinh' && (
-                        <View style={styles.categoryBadge}>
-                            <Text style={styles.categoryBadgeText}>{displayCount}</Text>
-                        </View>
-                    )}
-                </TouchableOpacity>
-
-                {isExpanded && (
-                    <View style={styles.categoryContent}>
-                        {filteredCategoryContacts.length > 0 ? (
-                            filteredCategoryContacts.map((item, index) => (
-                                <View key={item.id || `category-${category}-${index}`}>
-                                    {renderItem({ item, isInCategory: true })}
-                                </View>
-                            ))
-                        ) : (
-                            <View style={styles.emptyCategoryContainer}>
-                                <Text style={styles.emptyCategoryText}>
-                                    {searchQuery ? 'Không tìm thấy kết quả' : 'Chưa có liên hệ nào'}
-                                </Text>
-                            </View>
-                        )}
-                    </View>
-                )}
-            </View>
-        );
-    };
-
-    const handleSaveContact = async (contact: ContactWithCommune) => {
+    const handleSaveContact = useCallback(async (contact: ContactWithCommune) => {
         if (!contact.mobile) {
             Alert.alert('Thông báo', 'Liên hệ này chưa có số điện thoại để lưu');
             return;
@@ -224,7 +165,6 @@ const ContactsScreen = () => {
             return;
         }
 
-        const normalizePhone = (mobile: string) => mobile.replace(/\./g, '').replace(/\-/g, '').replace(/\s/g, '');
         const phoneNumber = normalizePhone(contact.mobile);
 
         try {
@@ -242,9 +182,19 @@ const ContactsScreen = () => {
             console.error('Error saving contact to phonebook:', error);
             Alert.alert('Lỗi', 'Không thể lưu liên hệ vào danh bạ');
         }
-    };
+    }, [normalizePhone]);
 
-    const renderItem = ({ item, isInCategory = false }: { item: ContactWithCommune; isInCategory?: boolean }) => {
+    const handleCall = useCallback((mobile: string | null | undefined) => {
+        if (!mobile) return;
+        const phoneNumber = normalizePhone(mobile);
+        Linking.openURL(`tel:${phoneNumber}`);
+    }, [normalizePhone]);
+
+    const handleToggleExpand = useCallback((itemId: string | null) => {
+        setExpandedId(prev => prev === itemId ? null : itemId);
+    }, []);
+
+    const renderItem = useCallback(({ item, isInCategory = false }: { item: ContactWithCommune; isInCategory?: boolean }) => {
         const isExpanded = item.id === expandedId;
         // Lấy tất cả contacts có cùng ma_xa (normalize để đảm bảo khớp)
         const maXa = String(item.ma_xa || '').trim() || 'unknown';
@@ -265,14 +215,6 @@ const ContactsScreen = () => {
         const communeInfo = contactWithCap?.communeInfo || item.communeInfo;
         const hasCommuneInfo = !!communeInfo;
 
-        const normalizePhone = (mobile: string) => mobile.replace(/\./g, '').replace(/\-/g, '').replace(/\s/g, '');
-
-        const handleCall = (mobile: string | null | undefined) => {
-            if (!mobile) return;
-            const phoneNumber = normalizePhone(mobile);
-            Linking.openURL(`tel:${phoneNumber}`);
-        };
-
         const handleViewDetail = () => {
             // Lấy communeInfo từ contact có communeInfo đầy đủ trong nhóm
             const contactWithCommuneInfo = sameMaXaContacts.find(c => c.communeInfo) || item;
@@ -289,7 +231,7 @@ const ContactsScreen = () => {
             <TouchableOpacity
                 style={[styles.card, isInCategory && styles.cardInCategory]}
                 activeOpacity={1}
-                onPress={() => setExpandedId(isExpanded ? null : item.id || null)}
+                onPress={() => handleToggleExpand(item.id || null)}
             >
                 <View style={styles.cardHeader}>
                     <View style={styles.nameContainer}>
@@ -364,6 +306,69 @@ const ContactsScreen = () => {
                 )}
             </TouchableOpacity>
         );
+    }, [expandedId, contactsByMaXa, handleCall, handleSaveContact, handleToggleExpand, navigation]);
+
+    if (loading) {
+        return (
+            <View style={[styles.container, styles.centerContent]}>
+                <ActivityIndicator size="large" color="#007AFF" />
+                <Text style={styles.loadingText}>Đang tải...</Text>
+            </View>
+        );
+    }
+
+    // Render category header (item lớn)
+    const renderCategoryHeader = (category: string, title: string) => {
+        const isExpanded = expandedCategory === category;
+        const categoryContacts = category === 'tinh' ? contactsByCap.capTinh : 
+                                category === 'phong' ? contactsByCap.capPhong : 
+                                contactsByCap.capXa;
+        const filteredCategoryContacts = getFilteredContactsByCategory(categoryContacts);
+        const displayCount = filteredCategoryContacts.length;
+
+        return (
+            <View style={styles.categoryCard}>
+                <TouchableOpacity
+                    style={styles.categoryHeader}
+                    activeOpacity={0.7}
+                    onPress={() => setExpandedCategory(isExpanded ? null : category)}
+                >
+                    <View style={styles.categoryHeaderLeft}>
+                        <AntDesign 
+                            name={isExpanded ? "down" : "right"} 
+                            size={20} 
+                            color="#dc3545" 
+                            style={styles.categoryIcon} 
+                        />
+                        <Text style={styles.categoryTitle}>{title}</Text>
+                    </View>
+                    {/* Cấp tỉnh không hiển thị số lượng */}
+                    {displayCount > 0 && category !== 'tinh' && (
+                        <View style={styles.categoryBadge}>
+                            <Text style={styles.categoryBadgeText}>{displayCount}</Text>
+                        </View>
+                    )}
+                </TouchableOpacity>
+
+                {isExpanded && (
+                    <View style={styles.categoryContent}>
+                        {filteredCategoryContacts.length > 0 ? (
+                            filteredCategoryContacts.map((item, index) => (
+                                <View key={item.id || `category-${category}-${index}`}>
+                                    {renderItem({ item, isInCategory: true })}
+                                </View>
+                            ))
+                        ) : (
+                            <View style={styles.emptyCategoryContainer}>
+                                <Text style={styles.emptyCategoryText}>
+                                    {searchQuery ? 'Không tìm thấy kết quả' : 'Chưa có liên hệ nào'}
+                                </Text>
+                            </View>
+                        )}
+                    </View>
+                )}
+            </View>
+        );
     };
 
     return (
@@ -401,6 +406,11 @@ const ContactsScreen = () => {
                 renderItem={({ item }) => 
                     renderCategoryHeader(item.category, item.title)
                 }
+                removeClippedSubviews={true}
+                maxToRenderPerBatch={10}
+                updateCellsBatchingPeriod={50}
+                initialNumToRender={3}
+                windowSize={10}
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>
                         <Text style={styles.emptyText}>Chưa có liên hệ nào</Text>
