@@ -18,6 +18,7 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 const ContactsScreen = () => {
     const navigation = useNavigation<NavigationProp>();
     const [expandedId, setExpandedId] = useState<string | null>(null);
+    const [expandedCategory, setExpandedCategory] = useState<string | null>(null); // 'tinh', 'phong', 'xa'
     const [searchQuery, setSearchQuery] = useState<string>('');
     const [contacts, setContacts] = useState<ContactWithCommune[]>([]);
     const [loading, setLoading] = useState(true);
@@ -63,11 +64,11 @@ const ContactsScreen = () => {
         );
     };
 
-    // Danh sách hiển thị: 1 item / ma_xa, sort EMERGENCY* lên đầu
-    const filteredContacts = useMemo(() => {
+    // Filter và group contacts theo ma_xa cho từng category
+    const getFilteredContactsByCategory = (categoryContacts: ContactWithCommune[]) => {
         // Group toàn bộ contacts theo ma_xa
         const grouped = new Map<string, ContactWithCommune[]>();
-        contacts.forEach((contact) => {
+        categoryContacts.forEach((contact) => {
             const maXa = String(contact.ma_xa || '').trim() || 'unknown';
             if (!grouped.has(maXa)) grouped.set(maXa, []);
             grouped.get(maXa)!.push(contact);
@@ -107,7 +108,30 @@ const ContactsScreen = () => {
             const bTenXa = b.ten_xa || b.communeInfo?.ten_xa || '';
             return aTenXa.localeCompare(bTenXa, 'vi');
         });
-    }, [contacts, searchQuery]);
+    };
+
+    // Group contacts theo cap (cấp)
+    const contactsByCap = useMemo(() => {
+        const capTinh: ContactWithCommune[] = [];   // Cấp tỉnh  => cap === 3
+        const capPhong: ContactWithCommune[] = [];  // Cấp phòng => cap === 1
+        const capXa: ContactWithCommune[] = [];     // Cấp xã    => cap === 2
+
+        contacts.forEach((contact) => {
+            const cap = contact.communeInfo?.cap;
+            if (cap === 3) {
+                capTinh.push(contact);
+            } else if (cap === 1) {
+                capPhong.push(contact);
+            } else if (cap === 2) {
+                capXa.push(contact);
+            } else {
+                // Không có cap rõ ràng: gom về cấp xã/phường cho dễ tìm
+                capXa.push(contact);
+            }
+        });
+
+        return { capTinh, capPhong, capXa };
+    }, [contacts]);
 
     // Group contacts theo ma_xa để hiển thị khi expand
     const contactsByMaXa = useMemo(() => {
@@ -121,15 +145,6 @@ const ContactsScreen = () => {
             grouped.get(maXa)!.push(contact);
         });
         
-        // // Debug: Log số lượng contacts theo từng ma_xa
-        // if (__DEV__) {
-        //     grouped.forEach((contacts, maXa) => {
-        //         if (contacts.length > 0) {
-        //             console.log(`ma_xa: ${maXa}, số lượng contacts: ${contacts.length}`);
-        //         }
-        //     });
-        // }
-        
         return grouped;
     }, [contacts]);
 
@@ -142,7 +157,61 @@ const ContactsScreen = () => {
         );
     }
 
-    const renderItem = ({ item }: { item: ContactWithCommune }) => {
+    // Render category header (item lớn)
+    const renderCategoryHeader = (category: string, title: string) => {
+        const isExpanded = expandedCategory === category;
+        const categoryContacts = category === 'tinh' ? contactsByCap.capTinh : 
+                                category === 'phong' ? contactsByCap.capPhong : 
+                                contactsByCap.capXa;
+        const filteredCategoryContacts = getFilteredContactsByCategory(categoryContacts);
+        const displayCount = filteredCategoryContacts.length;
+
+        return (
+            <View style={styles.categoryCard}>
+                <TouchableOpacity
+                    style={styles.categoryHeader}
+                    activeOpacity={0.7}
+                    onPress={() => setExpandedCategory(isExpanded ? null : category)}
+                >
+                    <View style={styles.categoryHeaderLeft}>
+                        <AntDesign 
+                            name={isExpanded ? "down" : "right"} 
+                            size={20} 
+                            color="#dc3545" 
+                            style={styles.categoryIcon} 
+                        />
+                        <Text style={styles.categoryTitle}>{title}</Text>
+                    </View>
+                    {/* Cấp tỉnh không hiển thị số lượng */}
+                    {displayCount > 0 && category !== 'tinh' && (
+                        <View style={styles.categoryBadge}>
+                            <Text style={styles.categoryBadgeText}>{displayCount}</Text>
+                        </View>
+                    )}
+                </TouchableOpacity>
+
+                {isExpanded && (
+                    <View style={styles.categoryContent}>
+                        {filteredCategoryContacts.length > 0 ? (
+                            filteredCategoryContacts.map((item, index) => (
+                                <View key={item.id || `category-${category}-${index}`}>
+                                    {renderItem({ item, isInCategory: true })}
+                                </View>
+                            ))
+                        ) : (
+                            <View style={styles.emptyCategoryContainer}>
+                                <Text style={styles.emptyCategoryText}>
+                                    {searchQuery ? 'Không tìm thấy kết quả' : 'Chưa có liên hệ nào'}
+                                </Text>
+                            </View>
+                        )}
+                    </View>
+                )}
+            </View>
+        );
+    };
+
+    const renderItem = ({ item, isInCategory = false }: { item: ContactWithCommune; isInCategory?: boolean }) => {
         const isExpanded = item.id === expandedId;
         // Lấy tất cả contacts có cùng ma_xa (normalize để đảm bảo khớp)
         const maXa = String(item.ma_xa || '').trim() || 'unknown';
@@ -185,7 +254,7 @@ const ContactsScreen = () => {
 
         return (
             <TouchableOpacity
-                style={styles.card}
+                style={[styles.card, isInCategory && styles.cardInCategory]}
                 activeOpacity={1}
                 onPress={() => setExpandedId(isExpanded ? null : item.id || null)}
             >
@@ -204,7 +273,8 @@ const ContactsScreen = () => {
                             </Text>
                         </View>
                     </View>
-                    {hasCommuneInfo && cap !== 1 && (
+                    {/* Chỉ hiển thị nút xem chi tiết cho cấp xã (cap === 2) */}
+                    {hasCommuneInfo && cap === 2 && (
                         <View style={styles.rightActions}>
                             <TouchableOpacity onPress={handleViewDetail}>
                                 <AntDesign name="right-circle" size={24} color="red" />
@@ -283,12 +353,23 @@ const ContactsScreen = () => {
                 )}
             </View>
             <FlatList
-                data={filteredContacts}
-                keyExtractor={(item) => item.id?.toString() || Math.random().toString()}
-                renderItem={renderItem}
+                data={[
+                    { type: 'category', category: 'tinh', title: 'Cấp tỉnh' },
+                    { type: 'category', category: 'phong', title: 'Cấp phòng' },
+                    { type: 'category', category: 'xa', title: 'Cấp xã/phường/đặc khu/đồn' },
+                ]}
+                keyExtractor={(item, index) => item.category || index.toString()}
+                renderItem={({ item }) => 
+                    renderCategoryHeader(item.category, item.title)
+                }
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>
                         <Text style={styles.emptyText}>Chưa có liên hệ nào</Text>
+                    </View>
+                }
+                ListFooterComponent={
+                    <View style={styles.versionContainer}>
+                        <Text style={styles.versionText}>Phiên bản 1.0.0</Text>
                     </View>
                 }
             />
@@ -342,6 +423,10 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.1,
         shadowRadius: 4,
         elevation: 2,
+    },
+    cardInCategory: {
+        marginBottom: 8,
+        backgroundColor: '#fff',
     },
     cardHeader: {
         flexDirection: 'row',
@@ -484,6 +569,70 @@ const styles = StyleSheet.create({
     },
     noPhoneText: {
         fontSize: 13,
+        color: '#999',
+        fontStyle: 'italic',
+    },
+    categoryCard: {
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        borderRadius: 12,
+        marginBottom: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+        overflow: 'hidden',
+    },
+    categoryHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: 18,
+        backgroundColor: '#f8f9fa',
+    },
+    categoryHeaderLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+    },
+    categoryIcon: {
+        marginRight: 12,
+    },
+    categoryTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#dc3545',
+    },
+    categoryBadge: {
+        backgroundColor: '#dc3545',
+        borderRadius: 12,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        minWidth: 40,
+        alignItems: 'center',
+    },
+    categoryBadgeText: {
+        color: '#fff',
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    categoryContent: {
+        padding: 8,
+    },
+    emptyCategoryContainer: {
+        padding: 20,
+        alignItems: 'center',
+    },
+    emptyCategoryText: {
+        fontSize: 14,
+        color: '#999',
+        fontStyle: 'italic',
+    },
+    versionContainer: {
+        alignItems: 'center',
+    },
+    versionText: {
+        fontSize: 12,
         color: '#999',
         fontStyle: 'italic',
     },
