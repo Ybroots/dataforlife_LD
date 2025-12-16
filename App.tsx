@@ -107,7 +107,19 @@ function MapStackScreen() {
         name="MapMain"
         component={MapScreen}
         options={{
-          title: 'Bản đồ Công an tỉnh Lâm Đồng',
+          headerTitle: () => (
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Image
+                source={require('./assets/images/logo.png')}
+                style={{ width: 30, height: 30, marginRight: 8, borderRadius: 6 }}
+                resizeMode="contain"
+              />
+              <Text style={{ color: '#fff', fontSize: 18, fontWeight: '600' }}>
+                Công an tỉnh Lâm Đồng
+              </Text>
+            </View>
+          ),
+          headerTitleAlign: 'left',
         }}
       />
     </MapStack.Navigator>
