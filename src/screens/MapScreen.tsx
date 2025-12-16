@@ -7,6 +7,9 @@ import {
   TextInput,
   TouchableOpacity,
   FlatList,
+  Modal,
+  ScrollView,
+  Image,
 } from "react-native";
 import MapView, {
   Polygon,
@@ -14,6 +17,11 @@ import MapView, {
   Region,
 } from "react-native-maps";
 import AntDesign from "@expo/vector-icons/AntDesign";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import Entypo from "@expo/vector-icons/Entypo";
+import FontAwesome from "@expo/vector-icons/FontAwesome";
+import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
+import * as Clipboard from "expo-clipboard";
 // @ts-ignore – cho phép import file GeoJSON lớn
 import mapData from "../../map34.json";
 
@@ -21,6 +29,144 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
+  },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "flex-end",
+  },
+
+  bottomSheet: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 16,
+    paddingBottom: 24,
+    paddingHorizontal: 16,
+    maxHeight: "80%",
+  },
+
+  sheetHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+
+  sheetHeaderSide: {
+    width: 32,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  sheetTitleWrapper: {
+    flex: 1,
+    alignItems: "center",
+  },
+
+  sheetCloseButton: {
+    padding: 4,
+  },
+
+  sheetLogo: {
+    width: 56,
+    height: 56,
+    marginBottom: 8,
+    resizeMode: "contain",
+  },
+
+  sheetTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+
+  sheetSubtitle: {
+    fontSize: 14,
+    color: "#777",
+    marginTop: 4,
+    textAlign: "center",
+  },
+
+  pillRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 12,
+  },
+
+  pill: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginRight: 8,
+  },
+
+  pillLabel: {
+    fontSize: 13,
+    color: "#555",
+    marginBottom: 4,
+  },
+
+  pillValue: {
+    fontSize: 15,
+    fontWeight: "600",
+  },
+
+  card: {
+    marginTop: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderColor: "#eee",
+  },
+
+  cardLabel: {
+    fontSize: 13,
+    color: "#777",
+    marginBottom: 4,
+  },
+
+  cardValue: {
+    fontSize: 15,
+  },
+
+  rowWithIcon: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+  },
+
+  rowIconWrapper: {
+    width: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 2,
+  },
+
+  rowTextWrapper: {
+    flex: 1,
+  },
+
+  copyIconButton: {
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+  },
+
+  actionButton: {
+    marginTop: 12,
+    borderRadius: 12,
+    paddingVertical: 11,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    flexDirection: "row",
+  },
+
+  actionButtonText: {
+    fontSize: 15,
+    fontWeight: "500",
+    marginLeft: 6,
   },
 
   overlayContainer: {
@@ -170,8 +316,8 @@ const MapScreen = () => {
   const [open, setOpen] = useState(false);
   const [keyword, setKeyword] = useState("");
   const [selected, setSelected] = useState("Chọn xã/phường");
-  const [selectedCommune, setSelectedCommune] =
-    useState<CommunePolygon | null>(null);
+  const [selectedCommune, setSelectedCommune] = useState<CommunePolygon | null>(null);
+  const [showInfo, setShowInfo] = useState(false);
 
   const filteredList = COMMUNE_POLYGONS.filter((c) =>
     c.name.toLowerCase().includes(keyword.toLowerCase())
@@ -212,7 +358,7 @@ const MapScreen = () => {
     <View style={styles.container}>
       {/* 🔍 Overlay Search */}
       <View style={styles.overlayContainer}>
-        
+
         {/* Hộp chọn xã */}
         <TouchableOpacity
           style={styles.dropdownBox}
@@ -278,10 +424,231 @@ const MapScreen = () => {
               strokeWidth={2}
               strokeColor="#ffffff"
               fillColor="rgba(255, 87, 34, 0.55)"
-              onPress={() => handleSelectCommune(selectedCommune)}
+              onPress={() => {
+                setShowInfo(true);
+              }}
             />
           ))}
       </MapView>
+
+      {/* Bottom sheet thông tin xã/phường */}
+      <Modal
+        visible={showInfo && !!selectedCommune}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowInfo(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.bottomSheet}>
+            <View style={styles.sheetHeader}>
+              <View style={styles.sheetHeaderSide} />
+              <View style={styles.sheetTitleWrapper}>
+                <Text style={styles.sheetTitle}>
+                  {selectedCommune?.name || "Xã/Phường"}
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.sheetHeaderSide, styles.sheetCloseButton]}
+                onPress={() => setShowInfo(false)}
+              >
+                <AntDesign name="close" size={22} color="#333" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {(() => {
+                const props = selectedCommune?.properties || {};
+
+                // COMMUNE_SCHEMA fields
+                const danSo = props.dan_so ?? null;
+                const dienTich = props.dtich_km2 ?? null;
+                const matDo = props.matdo_km2 ?? null;
+                const diaChi = props.address ?? null;
+                const truSo = props.tru_so ?? null;
+                const ghiChu = props.sap_nhap ?? null;
+
+                // CONTACT_SCHEMA fields (nếu đã được merge vào properties)
+                const chief = props.chief ?? null;
+                const mobile = props.mobile ?? null;
+
+                const diaChiTruSo = truSo || diaChi;
+                const toaDo = props.toa_do || "";
+
+                return (
+                  <>
+                    {(danSo || dienTich) && (
+                      <View style={styles.pillRow}>
+                        {danSo && (
+                          <View
+                            style={[
+                              styles.pill,
+                              { backgroundColor: "#EFF3FF" },
+                            ]}
+                          >
+                            <View
+                              style={{
+                                flexDirection: "row",
+                                alignItems: "center",
+                                marginBottom: 4,
+                              }}
+                            >
+                              <Ionicons
+                                name="people-sharp"
+                                size={18}
+                                color="#1f6feb"
+                              />
+                              <Text
+                                style={[styles.pillLabel, { marginLeft: 6 }]}
+                              >
+                                Dân số
+                              </Text>
+                            </View>
+                            <Text style={styles.pillValue}>
+                              {danSo.toLocaleString("vi-VN")} người
+                            </Text>
+                          </View>
+                        )}
+                        {dienTich && (
+                          <View
+                            style={[
+                              styles.pill,
+                              {
+                                backgroundColor: "#E7FAF3",
+                                marginRight: 0,
+                              },
+                            ]}
+                          >
+                            <View
+                              style={{
+                                flexDirection: "row",
+                                alignItems: "center",
+                                marginBottom: 4,
+                              }}
+                            >
+                              <Ionicons
+                                name="earth"
+                                size={18}
+                                color="#389e0d"
+                              />
+                              <Text
+                                style={[styles.pillLabel, { marginLeft: 6 }]}
+                              >
+                                Diện tích
+                              </Text>
+                            </View>
+                            <Text style={styles.pillValue}>
+                              {dienTich} km²
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    )}
+
+                    {matDo && (
+                      <View
+                        style={[
+                          styles.pill,
+                          {
+                            backgroundColor: "#FFF7E6",
+                            marginRight: 0,
+                            marginTop: 12,
+                          },
+                        ]}
+                      >
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            marginBottom: 4,
+                          }}
+                        >
+                          <Ionicons
+                            name="business"
+                            size={18}
+                            color="#fa8c16"
+                          />
+                          <Text style={[styles.pillLabel, { marginLeft: 6 }]}>
+                            Mật độ dân cư
+                          </Text>
+                        </View>
+                        <Text style={styles.pillValue}>
+                          {matDo} người/km²
+                        </Text>
+                      </View>
+                    )}
+
+                    {diaChiTruSo && (
+                      <View style={styles.card}>
+                        <View style={styles.rowWithIcon}>
+                          <View style={styles.rowIconWrapper}>
+                            <Entypo name="location" size={18} color="red" />
+                          </View>
+                        <View style={styles.rowTextWrapper}>
+                          <Text style={styles.cardLabel}>
+                            Địa chỉ trụ sở CA
+                          </Text>
+                          <Text style={styles.cardValue}>
+                            {diaChiTruSo}
+                          </Text>
+                        </View>
+                        <TouchableOpacity
+                          style={styles.copyIconButton}
+                          onPress={() => {
+                            if (diaChiTruSo) {
+                              Clipboard.setStringAsync(diaChiTruSo);
+                            }
+                          }}
+                        >
+                          <AntDesign name="copy" size={18} color="gray" />
+                        </TouchableOpacity>
+                        </View>
+                      </View>
+                    )}
+
+                    <View style={styles.card}>
+                      <View style={styles.rowWithIcon}>
+                        <View style={styles.rowIconWrapper}>
+                          <AntDesign name="pushpin" size={18} color="#faad14" />
+                        </View>
+                        <View style={styles.rowTextWrapper}>
+                          <Text style={styles.cardLabel}>Tọa độ</Text>
+                          <Text style={styles.cardValue}>
+                            {toaDo ||
+                              `${selectedCommune?.coordinates?.[0]?.[0]?.latitude?.toFixed(
+                                6
+                              )}, ${selectedCommune?.coordinates?.[0]?.[0]?.longitude?.toFixed(
+                                6
+                              )}`}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+
+                    {ghiChu && (
+                      <View style={styles.card}>
+                        <View style={styles.rowWithIcon}>
+                          <View style={styles.rowIconWrapper}>
+                            <FontAwesome name="sticky-note" size={18} color="pink" />
+                          </View>
+                          <View style={styles.rowTextWrapper}>
+                            <Text style={styles.cardLabel}>Ghi chú</Text>
+                            <Text style={styles.cardValue}>{ghiChu}</Text>
+                          </View>
+                        </View>
+                      </View>
+                    )}
+
+                    <TouchableOpacity style={styles.actionButton}>
+                      <FontAwesome5 name="directions" size={18} color="orange" />
+                      <Text style={styles.actionButtonText}>Chỉ đường</Text>
+                    </TouchableOpacity>
+                  </>
+                );
+              })()}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
