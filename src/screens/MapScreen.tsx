@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   ScrollView,
   Image,
 } from "react-native";
+import { useRoute } from "@react-navigation/native";
 import MapView, {
   Polygon,
   PROVIDER_GOOGLE,
@@ -158,15 +159,15 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#e0e0e0",
     flexDirection: "row",
+    backgroundColor: '#dc3545',
   },
 
   actionButtonText: {
     fontSize: 15,
     fontWeight: "500",
     marginLeft: 6,
+    color: '#fff',
   },
 
   overlayContainer: {
@@ -301,6 +302,7 @@ const ALL_COMMUNES = COMMUNE_POLYGONS.map((c) => c.name);
 
 const MapScreen = () => {
   const mapRef = useRef<MapView | null>(null);
+  const route = useRoute<any>();
 
   // Tính region khởi tạo từ polygon đầu tiên
   const firstPolygon = COMMUNE_POLYGONS[0];
@@ -318,6 +320,8 @@ const MapScreen = () => {
   const [selected, setSelected] = useState("Chọn xã/phường");
   const [selectedCommune, setSelectedCommune] = useState<CommunePolygon | null>(null);
   const [showInfo, setShowInfo] = useState(false);
+
+  const initialMaXaFromRoute: string | undefined = route.params?.ma_xa;
 
   const filteredList = COMMUNE_POLYGONS.filter((c) =>
     c.name.toLowerCase().includes(keyword.toLowerCase())
@@ -353,6 +357,19 @@ const MapScreen = () => {
     setOpen(false);
     focusOnCommune(commune);
   };
+
+  // Khi được điều hướng từ màn hình chi tiết xã, tự động focus và chọn xã theo ma_xa
+  useEffect(() => {
+    if (!initialMaXaFromRoute) return;
+
+    const commune = COMMUNE_POLYGONS.find(
+      (c) => c.properties?.ma_xa?.toString() === initialMaXaFromRoute.toString()
+    );
+
+    if (commune) {
+      handleSelectCommune(commune);
+    }
+  }, [initialMaXaFromRoute]);
 
   return (
     <View style={styles.container}>

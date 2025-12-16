@@ -4,7 +4,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { Commune } from '../models';
 
 const CommuneDetailScreen = () => {
-    const navigation = useNavigation();
+    const navigation = useNavigation<any>();
     const route = useRoute();
     const { communeInfo } = route.params as { communeInfo: Commune };
 
@@ -45,7 +45,16 @@ const CommuneDetailScreen = () => {
                     )}
 
                     {/* Button Xem vị trí trên bản đồ */}
-                    <TouchableOpacity style={styles.mapButton}>
+                    <TouchableOpacity
+                        style={styles.mapButton}
+                        onPress={() => {
+                            // Điều hướng sang tab "Bản đồ" và truyền mã xã để MapScreen focus
+                            navigation.getParent()?.navigate('Bản đồ', {
+                                screen: 'MapMain',
+                                params: { ma_xa: communeInfo.ma_xa },
+                            });
+                        }}
+                    >
                         <Text style={styles.mapButtonText}>Xem vị trí trên bản đồ</Text>
                     </TouchableOpacity>
                 </View>
