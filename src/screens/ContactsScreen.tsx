@@ -166,10 +166,13 @@ const ContactsScreen = () => {
         }
 
         const phoneNumber = normalizePhone(contact.mobile);
+        const communeName = contact.communeInfo?.ten_xa || contact.ten_xa || '';
+        const baseName = contact.fullName || 'Liên hệ CA';
+        const finalName = communeName ? `${baseName} ${communeName}` : baseName;
 
         try {
             await Contacts.addContactAsync({
-                [Contacts.Fields.FirstName]: contact.fullName || contact.communeInfo?.ten_xa || 'Liên hệ CA',
+                [Contacts.Fields.FirstName]: finalName,
                 [Contacts.Fields.Notes]: contact.communeInfo?.ten_tinh
                     ? `Công an ${contact.communeInfo.ten_tinh}`
                     : 'Liên hệ Công an địa phương',
@@ -219,11 +222,15 @@ const ContactsScreen = () => {
             // Lấy communeInfo từ contact có communeInfo đầy đủ trong nhóm
             const contactWithCommuneInfo = sameMaXaContacts.find(c => c.communeInfo) || item;
             const communeInfoToShow = contactWithCommuneInfo?.communeInfo || communeInfo;
-            
-            if (communeInfoToShow) {
-                navigation.navigate('CommuneDetail', { communeInfo: communeInfoToShow });
+
+            if (communeInfoToShow?.ma_xa) {
+                // Điều hướng sang tab "Bản đồ" và truyền mã xã để MapScreen focus
+                navigation.getParent()?.navigate('Bản đồ', {
+                    screen: 'MapMain',
+                    params: { ma_xa: communeInfoToShow.ma_xa },
+                });
             } else {
-                Alert.alert('Thông báo', 'Không có thông tin chi tiết cho xã này');
+                Alert.alert('Thông báo', 'Không có thông tin vị trí bản đồ cho xã này');
             }
         };
 

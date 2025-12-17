@@ -733,14 +733,14 @@ const MapScreen = () => {
                         </View>
                       </View>
                     )}
-
-                    <TouchableOpacity 
+                    {/* Tính năng tạm thời ko được phép sử dụng */}
+                    {/* <TouchableOpacity 
                       style={styles.actionButton}
                       onPress={() => handleDirections(diaChi || '')}
                     >
                       <FontAwesome5 name="directions" size={18} color="orange" />
                       <Text style={styles.actionButtonText}>Chỉ đường</Text>
-                    </TouchableOpacity>
+                    </TouchableOpacity> */}
                   </>
                 );
               })()}
