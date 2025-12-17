@@ -10,6 +10,9 @@ import {
   Modal,
   ScrollView,
   Image,
+  Linking,
+  Alert,
+  Platform,
 } from "react-native";
 import { useRoute } from "@react-navigation/native";
 import MapView, {
@@ -387,6 +390,45 @@ const MapScreen = () => {
     }
   };
 
+  const handleDirections = async (address: string) => {
+    if (!address) {
+      Alert.alert('Thông báo', 'Không có địa chỉ để chỉ đường');
+      return;
+    }
+
+    try {
+      // Encode địa chỉ để dùng trong URL
+      const encodedAddress = encodeURIComponent(address);
+      // URL Google Maps với chế độ chỉ đường
+      const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodedAddress}`;
+      
+      const canOpenGoogleMaps = await Linking.canOpenURL(googleMapsUrl);
+      if (canOpenGoogleMaps) {
+        await Linking.openURL(googleMapsUrl);
+      } else {
+        // Nếu là iOS và không mở được Google Maps, mở Apple Maps
+        if (Platform.OS === 'ios') {
+          const appleMapsUrl = `http://maps.apple.com/?daddr=${encodedAddress}`;
+          const canOpenAppleMaps = await Linking.canOpenURL(appleMapsUrl);
+          if (canOpenAppleMaps) {
+            await Linking.openURL(appleMapsUrl);
+          } else {
+            // Fallback: mở Google Maps web
+            const webUrl = `https://maps.google.com/?daddr=${encodedAddress}`;
+            await Linking.openURL(webUrl);
+          }
+        } else {
+          // Android: mở Google Maps web
+          const webUrl = `https://maps.google.com/?daddr=${encodedAddress}`;
+          await Linking.openURL(webUrl);
+        }
+      }
+    } catch (error) {
+      console.error('Error opening directions:', error);
+      Alert.alert('Lỗi', 'Không thể mở ứng dụng bản đồ. Vui lòng thử lại.');
+    }
+  };
+
   // Khi được điều hướng từ màn hình chi tiết xã, tự động focus và chọn xã theo ma_xa
   useEffect(() => {
     if (!initialMaXaFromRoute) return;
@@ -692,7 +734,10 @@ const MapScreen = () => {
                       </View>
                     )}
 
-                    <TouchableOpacity style={styles.actionButton}>
+                    <TouchableOpacity 
+                      style={styles.actionButton}
+                      onPress={() => handleDirections(diaChi || '')}
+                    >
                       <FontAwesome5 name="directions" size={18} color="orange" />
                       <Text style={styles.actionButtonText}>Chỉ đường</Text>
                     </TouchableOpacity>
