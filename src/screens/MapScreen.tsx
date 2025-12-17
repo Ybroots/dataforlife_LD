@@ -23,6 +23,8 @@ import Entypo from "@expo/vector-icons/Entypo";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
 import * as Clipboard from "expo-clipboard";
+import { CommuneService } from "../services/CommuneService";
+import { Commune } from "../models/Commune";
 // @ts-ignore – cho phép import file GeoJSON lớn
 import mapData from "../../map34.json";
 
@@ -320,6 +322,8 @@ const MapScreen = () => {
   const [selected, setSelected] = useState("Chọn xã/phường");
   const [selectedCommune, setSelectedCommune] = useState<CommunePolygon | null>(null);
   const [showInfo, setShowInfo] = useState(false);
+  const [communeData, setCommuneData] = useState<Commune | null>(null);
+  const [loadingCommune, setLoadingCommune] = useState(false);
 
   const initialMaXaFromRoute: string | undefined = route.params?.ma_xa;
 
@@ -356,6 +360,31 @@ const MapScreen = () => {
     setSelectedCommune(commune);
     setOpen(false);
     focusOnCommune(commune);
+  };
+
+  const fetchCommuneData = async (maXa: string) => {
+    try {
+      setLoadingCommune(true);
+      const commune = await CommuneService.getByMaXa(maXa);
+      setCommuneData(commune);
+    } catch (error) {
+      console.error('Error fetching commune data:', error);
+      setCommuneData(null);
+    } finally {
+      setLoadingCommune(false);
+    }
+  };
+
+  const handlePolygonPress = () => {
+    if (selectedCommune) {
+      const maXa = selectedCommune.properties?.ma_xa || selectedCommune.id;
+      if (maXa) {
+        fetchCommuneData(maXa.toString());
+        setShowInfo(true);
+      } else {
+        setShowInfo(true);
+      }
+    }
   };
 
   // Khi được điều hướng từ màn hình chi tiết xã, tự động focus và chọn xã theo ma_xa
@@ -441,9 +470,7 @@ const MapScreen = () => {
               strokeWidth={2}
               strokeColor="#ffffff"
               fillColor="rgba(255, 87, 34, 0.55)"
-              onPress={() => {
-                setShowInfo(true);
-              }}
+              onPress={handlePolygonPress}
             />
           ))}
       </MapView>
@@ -453,7 +480,10 @@ const MapScreen = () => {
         visible={showInfo && !!selectedCommune}
         animationType="slide"
         transparent
-        onRequestClose={() => setShowInfo(false)}
+        onRequestClose={() => {
+          setShowInfo(false);
+          setCommuneData(null);
+        }}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.bottomSheet}>
@@ -461,35 +491,42 @@ const MapScreen = () => {
               <View style={styles.sheetHeaderSide} />
               <View style={styles.sheetTitleWrapper}>
                 <Text style={styles.sheetTitle}>
-                  {selectedCommune?.name || "Xã/Phường"}
+                  {communeData?.ten_xa || selectedCommune?.name || "Xã/Phường"}
                 </Text>
               </View>
               <TouchableOpacity
                 style={[styles.sheetHeaderSide, styles.sheetCloseButton]}
-                onPress={() => setShowInfo(false)}
+                onPress={() => {
+                  setShowInfo(false);
+                  setCommuneData(null);
+                }}
               >
                 <AntDesign name="close" size={22} color="#333" />
               </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
-              {(() => {
-                const props = selectedCommune?.properties || {};
+              {loadingCommune ? (
+                <View style={{ padding: 20, alignItems: 'center' }}>
+                  <Text>Đang tải dữ liệu...</Text>
+                </View>
+              ) : (() => {
+                // Ưu tiên dùng data từ API, nếu không có thì fallback về properties
+                const dataSource = communeData || selectedCommune?.properties || {};
 
-                // COMMUNE_SCHEMA fields
-                const danSo = props.dan_so ?? null;
-                const dienTich = props.dtich_km2 ?? null;
-                const matDo = props.matdo_km2 ?? null;
-                const diaChi = props.address ?? null;
-                const truSo = props.tru_so ?? null;
-                const ghiChu = props.sap_nhap ?? null;
+                // COMMUNE_SCHEMA fields - lấy từ API hoặc properties
+                const danSo = communeData?.dan_so ?? dataSource.dan_so ?? null;
+                const dienTich = communeData?.dtich_km2 ?? dataSource.dtich_km2 ?? null;
+                const matDo = communeData?.matdo_km2 ?? dataSource.matdo_km2 ?? null;
+                const diaChi = communeData?.address ?? dataSource.address ?? null;
+                const truSo = communeData?.tru_so ?? dataSource.tru_so ?? null;
+                const ghiChu = communeData?.sap_nhap ?? dataSource.sap_nhap ?? null;
 
-                // CONTACT_SCHEMA fields (nếu đã được merge vào properties)
-                const chief = props.chief ?? null;
-                const mobile = props.mobile ?? null;
+                // CONTACT_SCHEMA fields - cần lấy từ ContactService nếu có
+                const chief = dataSource.chief ?? null;
+                const mobile = dataSource.mobile ?? null;
 
-                const diaChiTruSo = truSo || diaChi;
-                const toaDo = props.toa_do || "";
+                const toaDo = dataSource.toa_do || "";
 
                 return (
                   <>
@@ -594,7 +631,7 @@ const MapScreen = () => {
                       </View>
                     )}
 
-                    {diaChiTruSo && (
+                    {diaChi && (
                       <View style={styles.card}>
                         <View style={styles.rowWithIcon}>
                           <View style={styles.rowIconWrapper}>
@@ -605,14 +642,14 @@ const MapScreen = () => {
                             Địa chỉ trụ sở CA
                           </Text>
                           <Text style={styles.cardValue}>
-                            {diaChiTruSo}
+                            {diaChi}
                           </Text>
                         </View>
                         <TouchableOpacity
                           style={styles.copyIconButton}
                           onPress={() => {
-                            if (diaChiTruSo) {
-                              Clipboard.setStringAsync(diaChiTruSo);
+                            if (diaChi) {
+                              Clipboard.setStringAsync(diaChi);
                             }
                           }}
                         >
@@ -649,7 +686,7 @@ const MapScreen = () => {
                           </View>
                           <View style={styles.rowTextWrapper}>
                             <Text style={styles.cardLabel}>Ghi chú</Text>
-                            <Text style={styles.cardValue}>{ghiChu}</Text>
+                            <Text style={styles.cardValue}>Sáp nhập: {ghiChu}</Text>
                           </View>
                         </View>
                       </View>
