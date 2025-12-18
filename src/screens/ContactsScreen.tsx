@@ -270,13 +270,23 @@ const ContactsScreen = () => {
                         {/* Hiển thị tất cả contacts có cùng ma_xa */}
                         {sameMaXaContacts.length > 0 && (
                             <>
-                                {sameMaXaContacts.map((contact, index) => (
-                                    <View key={contact.id || index} style={styles.contactItem}>
-                                        <View style={styles.chiefContainer}>
-                                            <View style={styles.chiefInfo}>
-                                                <View style={styles.nameRow}>
-                                                    <Text style={styles.chiefName}>{contact.fullName || 'Chưa có tên'}</Text>
-                                                </View>
+                                {[...sameMaXaContacts]
+                                    .sort((a, b) => {
+                                        const getRank = (name: string) => {
+                                            const n = name.toLowerCase();
+                                            if (n.includes('trưởng') && !n.includes('phó')) return 1;
+                                            if (n.includes('phó')) return 2;
+                                            return 3;
+                                        };
+                                        return getRank(a.fullName || '') - getRank(b.fullName || '');
+                                    })
+                                    .map((contact, index) => (
+                                        <View key={contact.id || index} style={styles.contactItem}>
+                                            <View style={styles.chiefContainer}>
+                                                <View style={styles.chiefInfo}>
+                                                    <View style={styles.nameRow}>
+                                                        <Text style={styles.chiefName}>{contact.fullName || 'Chưa có tên'}</Text>
+                                                    </View>
                                                 {contact.mobile ? (
                                                     <Text style={styles.phoneNumber}>{contact.mobile}</Text>
                                                 ) : (
