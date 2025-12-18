@@ -66,14 +66,14 @@ function ContactsStack() {
             </View>
           ),
           headerTitleAlign: 'left',
-          headerRight: () => (
-            <Pressable 
-              onPress={() => navigation.navigate('PrivacyPolicy')} 
-              style={{ padding: 8 }}
-            >
-              <AntDesign name="info-circle" size={22} color="#fff" />
-            </Pressable>
-          ),
+          // headerRight: () => (
+          //   <Pressable 
+          //     onPress={() => navigation.navigate('PrivacyPolicy')} 
+          //     style={{ padding: 8 }}
+          //   >
+          //     <AntDesign name="info-circle" size={22} color="#fff" />
+          //   </Pressable>
+          // ),
         })}
       />
 
@@ -151,14 +151,14 @@ function MapStackScreen() {
             </View>
           ),
           headerTitleAlign: 'left',
-          headerRight: () => (
-            <Pressable 
-              onPress={() => navigation.navigate('PrivacyPolicy')} 
-              style={{ padding: 8 }}
-            >
-              <AntDesign name="info-circle" size={22} color="#fff" />
-            </Pressable>
-          ),
+          // headerRight: () => (
+          //   <Pressable 
+          //     onPress={() => navigation.navigate('PrivacyPolicy')} 
+          //     style={{ padding: 8 }}
+          //   >
+          //     <AntDesign name="info-circle" size={22} color="#fff" />
+          //   </Pressable>
+          // ),
         })}
       />
 

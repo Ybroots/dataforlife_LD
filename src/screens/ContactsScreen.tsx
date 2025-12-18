@@ -399,6 +399,7 @@ const ContactsScreen = () => {
                 )}
             </View>
             <FlatList
+                style={{ flex: 1 }}
                 data={[
                     { type: 'category', category: 'tinh', title: 'Cấp tỉnh' },
                     { type: 'category', category: 'phong', title: 'Cấp phòng' },
@@ -697,16 +698,17 @@ const styles = StyleSheet.create({
         fontStyle: 'italic',
     },
     footerContainer: {
-        paddingVertical: 20,
+        paddingVertical: 30,
+        paddingBottom: 40,
         alignItems: 'center',
-        gap: 5,
+        justifyContent: 'center',
     },
     footerLink: {
-        padding: 10,
+        paddingVertical: 5,
     },
     footerLinkText: {
-        color: '#007AFF',
-        fontSize: 14,
+        color: '#dc3545',
+        fontSize: 13,
         textDecorationLine: 'underline',
     },
 });
