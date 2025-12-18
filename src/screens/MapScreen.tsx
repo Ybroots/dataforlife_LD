@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
   clearButton: {
     position: 'absolute',
     right: 12,
-    top: 16,
+    paddingVertical: 14,
   },
 
   searchInput: {
@@ -472,7 +472,7 @@ const MapScreen = () => {
                   style={styles.clearButton}
                   onPress={() => setKeyword("")}
                 >
-                  <AntDesign name="close-circle" size={16} color="#999" />
+                  <AntDesign name="close-circle" size={20} color="#999" />
                 </TouchableOpacity>
               )}
             </View>

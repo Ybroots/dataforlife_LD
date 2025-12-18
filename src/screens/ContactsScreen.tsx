@@ -270,11 +270,6 @@ const ContactsScreen = () => {
                         {/* Hiển thị tất cả contacts có cùng ma_xa */}
                         {sameMaXaContacts.length > 0 && (
                             <>
-                                {tenXa && (
-                                    <Text style={styles.sectionTitle}>
-                                        {tenXa} ({sameMaXaContacts.length})
-                                    </Text>
-                                )}
                                 {sameMaXaContacts.map((contact, index) => (
                                     <View key={contact.id || index} style={styles.contactItem}>
                                         <View style={styles.chiefContainer}>
@@ -389,7 +384,7 @@ const ContactsScreen = () => {
             <View style={styles.searchContainer}>
                 <TextInput
                     style={styles.searchBar}
-                    placeholder="Nhập tên đơn vị, xã, phường"
+                    placeholder="Nhập tên đơn vị, xã, phường, đặc khu, đồn"
                     value={searchQuery}
                     onChangeText={(text) => setSearchQuery(text)}
                 />
@@ -399,7 +394,7 @@ const ContactsScreen = () => {
                         style={styles.clearButton}
                         onPress={() => setSearchQuery('')}
                     >
-                        <AntDesign name="close-circle" size={18} color="#999" />
+                        <AntDesign name="close-circle" size={20} color="#999" />
                     </TouchableOpacity>
                 )}
             </View>
@@ -467,7 +462,7 @@ const styles = StyleSheet.create({
     clearButton: {
         position: 'absolute',
         right: 12,
-        top: 16,
+        paddingVertical: 14,
     },
     card: {
         backgroundColor: 'rgba(255, 255, 255, 0.95)',
