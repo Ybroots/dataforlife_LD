@@ -13,6 +13,7 @@ import {
   Linking,
   Alert,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import { useRoute } from "@react-navigation/native";
 import MapView, {
@@ -549,8 +550,9 @@ const MapScreen = () => {
 
             <ScrollView showsVerticalScrollIndicator={false}>
               {loadingCommune ? (
-                <View style={{ padding: 20, alignItems: 'center' }}>
-                  <Text>Đang tải dữ liệu...</Text>
+                <View style={{ padding: 40, alignItems: 'center', justifyContent: 'center' }}>
+                  <ActivityIndicator size="large" color="#dc3545" />
+                  <Text style={{ marginTop: 12, color: '#666' }}>Đang tải dữ liệu...</Text>
                 </View>
               ) : (() => {
                 // Ưu tiên dùng data từ API, nếu không có thì fallback về properties

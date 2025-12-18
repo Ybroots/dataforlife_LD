@@ -11,11 +11,14 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import ContactsScreen from './src/screens/ContactsScreen';
 import MapScreen from './src/screens/MapScreen';
 import CommuneDetailScreen from './src/screens/CommuneDetailScreen';
+import PrivacyPolicyScreen from './src/screens/PrivacyPolicyScreen';
 import { Commune } from './src/models';
 
 export type RootStackParamList = {
   ContactsList: undefined;
   CommuneDetail: { communeInfo: Commune };
+  PrivacyPolicy: undefined;
+  MapMain: undefined;
 };
 
 const { width } = Dimensions.get('window');
@@ -23,7 +26,7 @@ const TAB_WIDTH = width / 2;
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator<RootStackParamList>();
-const MapStack = createNativeStackNavigator();
+const MapStack = createNativeStackNavigator<RootStackParamList>();
 
 // Màu chủ đạo của app
 const PRIMARY_COLOR = '#dc3545';
@@ -49,7 +52,7 @@ function ContactsStack() {
       <Stack.Screen
         name="ContactsList"
         component={ContactsScreen}
-        options={{
+        options={({ navigation }) => ({
           headerTitle: () => (
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Image
@@ -63,7 +66,15 @@ function ContactsStack() {
             </View>
           ),
           headerTitleAlign: 'left',
-        }}
+          headerRight: () => (
+            <Pressable 
+              onPress={() => navigation.navigate('PrivacyPolicy')} 
+              style={{ padding: 8 }}
+            >
+              <AntDesign name="info-circle" size={22} color="#fff" />
+            </Pressable>
+          ),
+        })}
       />
 
       <Stack.Screen
@@ -73,6 +84,23 @@ function ContactsStack() {
           title: `Chi tiết ${route.params?.communeInfo?.ten_xa || ''}`,
           headerBackVisible: false,
 
+          headerLeft: () => (
+            <Pressable
+              onPress={() => navigation.goBack()}
+              style={{ paddingRight: 20 }}
+            >
+              <AntDesign name="arrow-left" size={24} color="#fff" />
+            </Pressable>
+          ),
+        })}
+      />
+
+      <Stack.Screen
+        name="PrivacyPolicy"
+        component={PrivacyPolicyScreen}
+        options={({ navigation }) => ({
+          title: 'Chính sách bảo mật',
+          headerBackVisible: false,
           headerLeft: () => (
             <Pressable
               onPress={() => navigation.goBack()}
@@ -109,7 +137,7 @@ function MapStackScreen() {
       <MapStack.Screen
         name="MapMain"
         component={MapScreen}
-        options={{
+        options={({ navigation }) => ({
           headerTitle: () => (
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Image
@@ -123,7 +151,32 @@ function MapStackScreen() {
             </View>
           ),
           headerTitleAlign: 'left',
-        }}
+          headerRight: () => (
+            <Pressable 
+              onPress={() => navigation.navigate('PrivacyPolicy')} 
+              style={{ padding: 8 }}
+            >
+              <AntDesign name="info-circle" size={22} color="#fff" />
+            </Pressable>
+          ),
+        })}
+      />
+
+      <MapStack.Screen
+        name="PrivacyPolicy"
+        component={PrivacyPolicyScreen}
+        options={({ navigation }) => ({
+          title: 'Chính sách bảo mật',
+          headerBackVisible: false,
+          headerLeft: () => (
+            <Pressable
+              onPress={() => navigation.goBack()}
+              style={{ paddingRight: 20 }}
+            >
+              <AntDesign name="arrow-left" size={24} color="#fff" />
+            </Pressable>
+          ),
+        })}
       />
     </MapStack.Navigator>
   );

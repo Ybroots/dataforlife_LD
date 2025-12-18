@@ -313,7 +313,7 @@ const ContactsScreen = () => {
     if (loading) {
         return (
             <View style={[styles.container, styles.centerContent]}>
-                <ActivityIndicator size="large" color="#007AFF" />
+                <ActivityIndicator size="large" color="#dc3545" />
                 <Text style={styles.loadingText}>Đang tải...</Text>
             </View>
         );
@@ -419,8 +419,16 @@ const ContactsScreen = () => {
                     </View>
                 }
                 ListFooterComponent={
-                    <View style={styles.versionContainer}>
-                        <Text style={styles.versionText}>Phiên bản 1.0.0</Text>
+                    <View style={styles.footerContainer}>
+                        <TouchableOpacity 
+                            onPress={() => navigation.navigate('PrivacyPolicy')}
+                            style={styles.footerLink}
+                        >
+                            <Text style={styles.footerLinkText}>Điều khoản và Chính sách bảo mật</Text>
+                        </TouchableOpacity>
+                        <View style={styles.versionContainer}>
+                            <Text style={styles.versionText}>Phiên bản 1.0.0</Text>
+                        </View>
                     </View>
                 }
             />
@@ -681,11 +689,25 @@ const styles = StyleSheet.create({
     },
     versionContainer: {
         alignItems: 'center',
+        marginTop: 5,
     },
     versionText: {
         fontSize: 12,
         color: '#999',
         fontStyle: 'italic',
+    },
+    footerContainer: {
+        paddingVertical: 20,
+        alignItems: 'center',
+        gap: 5,
+    },
+    footerLink: {
+        padding: 10,
+    },
+    footerLinkText: {
+        color: '#007AFF',
+        fontSize: 14,
+        textDecorationLine: 'underline',
     },
 });
 
