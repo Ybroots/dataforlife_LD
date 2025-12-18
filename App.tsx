@@ -5,7 +5,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { StatusBar, View, Text, Image } from 'react-native';
+import { StatusBar, View, Text, Image, Dimensions } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import ContactsScreen from './src/screens/ContactsScreen';
@@ -17,6 +17,9 @@ export type RootStackParamList = {
   ContactsList: undefined;
   CommuneDetail: { communeInfo: Commune };
 };
+
+const { width } = Dimensions.get('window');
+const TAB_WIDTH = width / 2;
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -142,12 +145,47 @@ export default function App() {
           screenOptions={({ route }) => ({
             headerShown: false,
             tabBarActiveTintColor: PRIMARY_COLOR,
-            tabBarIcon: ({ color, size }) => {
+            tabBarInactiveTintColor: 'gray',
+            tabBarStyle: {
+              height: 80,
+              paddingBottom: 15,
+              paddingTop: 0,
+              borderTopWidth: 1,
+              borderTopColor: '#e0e0e0',
+              backgroundColor: '#fff',
+            },
+            tabBarLabelStyle: {
+              fontSize: 12,
+              fontWeight: '600',
+              marginTop: 5,
+            },
+            tabBarIcon: ({ color, size, focused }) => {
+              let icon;
               if (route.name === 'Danh bạ') {
-                return <AntDesign name="contacts" size={size} color={color} />;
+                icon = <AntDesign name="contacts" size={size} color={color} />;
               } else if (route.name === 'Bản đồ') {
-                return <FontAwesome name="map-o" size={size} color={color} />;
+                icon = <FontAwesome name="map-o" size={size} color={color} />;
               }
+
+              return (
+                <View style={{
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: TAB_WIDTH,
+                  height: '100%',
+                }}>
+                  {focused && (
+                    <View style={{
+                      position: 'absolute',
+                      top: -5,
+                      height: 3,
+                      width: '100%',
+                      backgroundColor: PRIMARY_COLOR,
+                    }} />
+                  )}
+                  {icon}
+                </View>
+              );
             },
           })}
         >
