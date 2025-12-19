@@ -2,6 +2,8 @@ import React from 'react';
 import { StyleSheet, View, ActivityIndicator, ImageBackground } from 'react-native';
 import { WebView } from 'react-native-webview';
 
+const POLICY_URI = 'https://sites.google.com/view/danhbacald-chinh-sach/';
+
 const PrivacyPolicyScreen = () => {
   return (
     <ImageBackground 
@@ -11,7 +13,7 @@ const PrivacyPolicyScreen = () => {
     >
       <View style={styles.webviewContainer}>
         <WebView
-          source={{ uri: 'https://sites.google.com/view/vneid-chinh-sach/home' }}
+          source={{ uri: POLICY_URI }}
           style={styles.webview}
           startInLoadingState={true}
           renderLoading={() => (

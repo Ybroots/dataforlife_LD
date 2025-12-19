@@ -99,7 +99,7 @@ function ContactsStack() {
         name="PrivacyPolicy"
         component={PrivacyPolicyScreen}
         options={({ navigation }) => ({
-          title: 'Chính sách bảo mật',
+          title: 'Chính sách quyền riêng tư',
           headerBackVisible: false,
           headerLeft: () => (
             <Pressable
@@ -166,7 +166,7 @@ function MapStackScreen() {
         name="PrivacyPolicy"
         component={PrivacyPolicyScreen}
         options={({ navigation }) => ({
-          title: 'Chính sách bảo mật',
+          title: 'Chính sách quyền riêng tư',
           headerBackVisible: false,
           headerLeft: () => (
             <Pressable
