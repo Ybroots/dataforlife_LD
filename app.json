@@ -14,9 +14,9 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.myapp",
+      "bundleIdentifier": "com.danhbacald.app",
       "config": {
-        "googleMapsApiKey": "AIzaSyCfrDuAuY7R3q_yTJttX6S414vcipaJSQ8"
+        "googleMapsApiKey": "AIzaSyDTZSHN-vKscaXT3jlx9gAxbt3QNTq6LAw"
       }
     },
     "android": {
@@ -28,10 +28,10 @@
       "predictiveBackGestureEnabled": false,
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyCfrDuAuY7R3q_yTJttX6S414vcipaJSQ8"
+          "apiKey": "AIzaSyDTZSHN-vKscaXT3jlx9gAxbt3QNTq6LAw"
         }
       },
-      "package": "com.anonymous.myapp"
+      "package": "com.danhbacald.app"
     },
     "web": {
       "favicon": "./assets/favicon.png"
