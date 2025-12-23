@@ -14,6 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.anonymous.myapp",
       "config": {
         "googleMapsApiKey": "AIzaSyDTZSHN-vKscaXT3jlx9gAxbt3QNTq6LAw"
       }
