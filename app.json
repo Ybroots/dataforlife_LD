@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "DanhBaCALD",
+    "name": "Danh bạ Công an Lâm Đồng",
     "slug": "DanhBaCALD",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -16,7 +16,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.anonymous.myapp",
       "config": {
-        "googleMapsApiKey": "AIzaSyDTZSHN-vKscaXT3jlx9gAxbt3QNTq6LAw"
+        "googleMapsApiKey": "AIzaSyCfrDuAuY7R3q_yTJttX6S414vcipaJSQ8"
       }
     },
     "android": {
@@ -28,7 +28,7 @@
       "predictiveBackGestureEnabled": false,
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyDTZSHN-vKscaXT3jlx9gAxbt3QNTq6LAw"
+          "apiKey": "AIzaSyCfrDuAuY7R3q_yTJttX6S414vcipaJSQ8"
         }
       },
       "package": "com.anonymous.myapp"
