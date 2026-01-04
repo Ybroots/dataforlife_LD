@@ -8,6 +8,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as Contacts from 'expo-contacts';
 import { getAllContactsWithCommunes, deleteContact } from '../services';
 import type { ContactWithCommune } from '../models';
+import { APP_VERSION } from '../config/constants';
 
 type RootStackParamList = {
     ContactsList: undefined;
@@ -438,7 +439,7 @@ const ContactsScreen = () => {
                             <Text style={styles.footerLinkText}>Điều khoản và Chính sách bảo mật</Text>
                         </TouchableOpacity>
                         <View style={styles.versionContainer}>
-                            <Text style={styles.versionText}>Phiên bản 1.0.0</Text>
+                            <Text style={styles.versionText}>Phiên bản {APP_VERSION}</Text>
                         </View>
                     </View>
                 }
