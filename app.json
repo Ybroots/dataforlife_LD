@@ -17,11 +17,7 @@
       "bundleIdentifier": "com.danhbacald.app",
       "buildNumber": "2",
       "config": {
-        "googleMapsApiKey": "AIzaSyAODPNQcyBRVk96wz0btWGQ5nhu1Ytyzt4"
-      },
-      "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Ứng dụng cần quyền truy cập vị trí để hiển thị bản đồ và tìm đường đến các địa điểm.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "Ứng dụng cần quyền truy cập vị trí để hiển thị bản đồ và tìm đường đến các địa điểm."
+        "googleMapsApiKey": "AIzaSyDTZSHN-vKscaXT3jlx9gAxbt3QNTq6LAw"
       }
     },
     "android": {
