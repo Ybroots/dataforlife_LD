@@ -94,12 +94,7 @@ export function CitizenOnboardingTour({ open, onClose }: { open: boolean; onClos
     if (!open) return;
     const update = () => {
       const selector = steps[step]?.target;
-      const node = selector
-        ? [...document.querySelectorAll<HTMLElement>(selector)]
-          .map((candidate) => ({ candidate, bounds: candidate.getBoundingClientRect() }))
-          .filter(({ bounds }) => bounds.width > 0 && bounds.height > 0)
-          .sort((a, b) => b.bounds.width * b.bounds.height - a.bounds.width * a.bounds.height)[0]?.candidate ?? null
-        : null;
+      const node = selector ? document.querySelector<HTMLElement>(selector) : null;
       if (!node) { setRect(null); return; }
       const bounds = node.getBoundingClientRect();
       const top = Math.max(8, bounds.top - 6);
