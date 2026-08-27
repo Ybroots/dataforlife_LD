@@ -67,7 +67,8 @@ python platform/web/qa/release-regression.py
 Pass `--browser <path-to-existing-chromium>` to reuse an installed test browser.
 The script reads local fixture credentials from `platform/.env` or environment
 variables without printing them. It refuses any API that does not report
-`dataSource: fixture`. It uses isolated browser contexts, never the user's browser
+`dataSource: fixture` or the explicit isolated-database flag `releaseValidation: true`.
+It uses isolated browser contexts, never the user's browser
 profile. The reserved `http://dataforlife.test` origin is intercepted and forwarded
 only to loopback preview: `isSecureContext` is genuinely false, without mocking
 the crypto API. There are no production writes.
@@ -90,3 +91,26 @@ unavailable state, not claimed as a successful SOS dispatch. GPS-enabled SOS nee
 HTTPS in deployment. AI and official VNeID remain labeled development/demo flows.
 Screens and navigation checks do not certify every backend business transition.
 Run the separate production-map check and inspect its screenshots before release.
+
+## Full-province release gate
+
+Fixtures are useful for tests, but are not valid evidence of production data parity.
+Point `QA_PREVIEW_URL` to a loopback production-build preview whose API uses a
+separate PostgreSQL database with the complete canonical dataset and
+`API_RELEASE_VALIDATION=true`. Never enable this flag on production.
+
+- `data-parity.py --base <origin> --snapshot <private-canonical.json>`: read-only
+  comparison of all 124 boundaries/localities, 296 contacts and 34 hotlines.
+- `province-overview.py`: read-only browser checks for the 124-region default,
+  native selector, four sample localities at three sizes including landscape,
+  a real rendered polygon click, deep-link reload, GPS and network-error recovery.
+  Set `QA_CHROME` to the installed Chromium executable. `QA_OVERVIEW_URL` may
+  target production for this read-only test; it never sends reports or SOS.
+- `full-data-browser.py`: **isolated QA only**, public-alert/map consistency,
+  directory, patrol lifecycle, shift reports and statistics.
+- `platform/e2e/final_dual_role_workflow.cjs`: **isolated QA only**, complete
+  citizen/officer transitions including attachments, SOS and satisfaction rating.
+
+Default province mode must not silently choose Xuân Hương or claim a GPS fix.
+Select a locality to see its original detailed boundary/directory; simplified
+overview geometry is display-only and must not replace authoritative lookup GIS.

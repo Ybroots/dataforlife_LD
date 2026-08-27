@@ -78,7 +78,7 @@ def screen(page, feature, role):
     expect(page.locator('.topbar')).to_be_visible()
     expect(page.locator('#screen-error-title')).to_have_count(0)
     if feature == 'directory':
-        page.locator('.map-canvas[data-map-loaded="true"][data-boundary-rendered]').wait_for(timeout=35000)
+        page.locator('.map-canvas[data-map-loaded="true"][data-overview-count]').wait_for(timeout=35000)
     else:
         expect(page.locator('.feature-page')).to_be_visible()
         selector = {'reports': '.citizen-workflow', 'sos': '.sos-emergency-screen',
@@ -235,6 +235,7 @@ def main():
                         page.screenshot(path=args.output / 'failure.png')
                         raise
                     finally:
+                        context.unroute_all(behavior='wait')
                         context.close()
                 context = context_for(browser, origin, officer)
                 page = context.new_page()
@@ -267,6 +268,7 @@ def main():
                         checks.append(f'{origin} officer {pane} {width}: pass')
                 assert not errors, errors
                 print(f'PASS {origin} officer 4 panes + 6 operations tabs at 3 widths', flush=True)
+                context.unroute_all(behavior='wait')
                 context.close()
             # Missing lazy chunk must show recovery UI, keeping header/navigation.
             context = context_for(browser, HTTP, citizen)
@@ -280,6 +282,7 @@ def main():
             page.screenshot(path=args.output / 'recovery.png')
             page.locator('.mobile-tabs').get_by_role('button', name='Bản đồ', exact=True).click()
             screen(page, 'directory', 'citizen')
+            context.unroute_all(behavior='wait')
             context.close()
             checks.append('Failed lazy chunk: visible recovery and navigation back to map pass')
         finally:

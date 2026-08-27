@@ -5,6 +5,11 @@ export interface AreaSummary {
   provinceName: string | null;
 }
 
+export interface AreaOverview {
+  type: 'FeatureCollection';
+  features: Array<{ type: 'Feature'; id: string; properties: AreaSummary; geometry: GeoJSON.Polygon | GeoJSON.MultiPolygon }>;
+}
+
 export interface StationResponse {
   name: string;
   address: string | null;
@@ -338,6 +343,7 @@ export interface OperationalMapPointInput {
 
 export interface DirectoryRepository {
   readonly sourceName: 'postgres' | 'fixture';
+  getAreaOverview(): Promise<AreaOverview>;
   searchAreas(query: string, limit: number): Promise<AreaSummary[]>;
   lookupByCode(code: string): Promise<AreaLookupResponse | null>;
   lookupByLocation(latitude: number, longitude: number): Promise<AreaLookupResponse | null>;

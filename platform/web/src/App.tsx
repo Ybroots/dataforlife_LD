@@ -1,6 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { ContactRound, FileWarning, Map, MapPinned, Menu, Search, ShieldCheck, UserRound, UserRoundCheck, X } from 'lucide-react';
-import { ApiError, getCitizenSession, getOfficerSession, listHotlines, lookupByCode, lookupByLocation, searchAreas, signOutCitizen, signOutOfficer } from './api';
+import { ApiError, getAreaOverview, getCitizenSession, getOfficerSession, listHotlines, lookupByCode, lookupByLocation, searchAreas, signOutCitizen, signOutOfficer } from './api';
 import { DirectoryPanel } from './components/DirectoryPanel';
 import { FeatureDrawer } from './components/FeatureDrawer';
 import { PoliceLoginDialog, PoliceLoginScreen } from './components/PoliceLogin';
@@ -10,7 +10,7 @@ import { CitizenOnboardingTour } from './components/CitizenOnboardingTour';
 import { CitizenNotifications } from './components/CitizenNotifications';
 import { ScreenErrorBoundary } from './components/ScreenErrorBoundary';
 import type { FeatureId } from './features';
-import type { AreaLookup, AreaSummary, CitizenSession, Hotline, WorkflowActor } from './types';
+import type { AreaLookup, AreaOverview, AreaSummary, CitizenSession, Hotline, WorkflowActor } from './types';
 import directoryLogoUrl from '../../../assets/images/logo-128.png';
 import vneidLogoUrl from '../../../assets/images/vneid-logo.png';
 
@@ -33,33 +33,6 @@ type LookupState = 'idle' | 'loading' | 'success' | 'error';
 const COMPACT_LAYOUT_QUERY = '(max-width: 1023px)';
 const FEATURE_IDS: FeatureId[] = ['directory', 'alerts', 'reports', 'sos', 'feedback', 'assistant', 'account'];
 const CITIZEN_TOUR_KEY = 'cskv-citizen-tour-v1';
-const XUAN_HUONG_AREA_CODE = '24781';
-const XUAN_HUONG_FIXTURE_CODE = 'DEMO-DA-LAT';
-let xuanHuongAreaRequest: ReturnType<typeof lookupByCode> | null = null;
-let entryLocationRequest: Promise<GeolocationPosition> | null = null;
-
-function loadXuanHuongArea() {
-  if (!xuanHuongAreaRequest) {
-    xuanHuongAreaRequest = lookupByCode(XUAN_HUONG_AREA_CODE).catch((caught) => {
-      if (!(caught instanceof ApiError) || caught.status !== 404) throw caught;
-      return lookupByCode(XUAN_HUONG_FIXTURE_CODE);
-    });
-  }
-  return xuanHuongAreaRequest;
-}
-
-function requestEntryLocation(): Promise<GeolocationPosition> {
-  if (!entryLocationRequest) {
-    entryLocationRequest = new Promise((resolve, reject) => {
-      navigator.geolocation.getCurrentPosition(resolve, reject, {
-        enableHighAccuracy: false,
-        timeout: 12_000,
-        maximumAge: 300_000,
-      });
-    });
-  }
-  return entryLocationRequest;
-}
 
 function featureFromUrl(): FeatureId {
   const requested = new URL(window.location.href).searchParams.get('feature');
@@ -90,6 +63,10 @@ export default function App() {
   const [state, setState] = useState<LookupState>('idle');
   const [error, setError] = useState<string | null>(null);
   const [area, setArea] = useState<AreaLookup | null>(null);
+  const [overview, setOverview] = useState<AreaOverview | null>(null);
+  const [overviewError, setOverviewError] = useState(false);
+  const [overviewAttempt, setOverviewAttempt] = useState(0);
+  const [areaNavigationVersion, setAreaNavigationVersion] = useState(0);
   const [isFixture, setIsFixture] = useState(false);
   const [selectedPosition, setSelectedPosition] = useState<{ latitude: number; longitude: number } | null>(null);
   const [mobileView, setMobileView] = useState<'directory' | 'map'>('map');
@@ -113,12 +90,13 @@ export default function App() {
     return 'landing';
   });
   const requestId = useRef(0);
+  const lookupRequestId = useRef(0);
   const lookupPanelRef = useRef<HTMLElement | null>(null);
   const statusRegionRef = useRef<HTMLDivElement | null>(null);
   const resultAnchorRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const restoreFeature = () => setActiveFeature(featureFromUrl());
+    const restoreFeature = () => { setActiveFeature(featureFromUrl()); setAreaNavigationVersion(value => value + 1); };
     window.addEventListener('popstate', restoreFeature);
     return () => window.removeEventListener('popstate', restoreFeature);
   }, []);
@@ -126,6 +104,16 @@ export default function App() {
   useEffect(() => {
     void listHotlines().then(setHotlines).catch(() => setHotlines([]));
   }, []);
+
+  useEffect(() => {
+    if (policePortalRequested || appView !== 'citizen' || activeFeature !== 'directory' || overview) return;
+    let cancelled = false;
+    setOverviewError(false);
+    void getAreaOverview().then(payload => {
+      if (!cancelled) { setOverview(payload.data); setIsFixture(payload.meta.dataSource === 'fixture'); }
+    }).catch(() => { if (!cancelled) setOverviewError(true); });
+    return () => { cancelled = true; };
+  }, [overviewAttempt, policePortalRequested, appView, activeFeature, overview]);
 
   useEffect(() => {
     if (!citizenLoginNotice) return;
@@ -241,54 +229,54 @@ export default function App() {
   }, []);
 
   const resolveCoordinates = useCallback(async (latitude: number, longitude: number) => {
+    const current = ++lookupRequestId.current;
     setSelectedPosition({ latitude, longitude });
     setState('loading');
     setError(null);
     try {
-      acceptEnvelope(await lookupByLocation(latitude, longitude));
+      const payload = await lookupByLocation(latitude, longitude);
+      if (current === lookupRequestId.current) acceptEnvelope(payload);
     } catch (caught) {
+      if (current !== lookupRequestId.current) return;
       const message = caught instanceof ApiError ? caught.message : 'Không thể tra cứu vị trí lúc này.';
       setState('error');
       setError(message);
     }
   }, [acceptEnvelope]);
 
+  const showProvince = useCallback(() => {
+    lookupRequestId.current += 1;
+    setArea(null); setSelectedPosition(null); setQuery(''); setSuggestions([]);
+    setState('idle'); setError(null); setSearchSettled(false); setMobileView('map');
+    const url = new URL(window.location.href);
+    url.searchParams.delete('area');
+    window.history.replaceState(window.history.state, '', url);
+  }, []);
+
+  const selectAreaCode = useCallback(async (code: string, showDirectory = true) => {
+    const current = ++lookupRequestId.current;
+    setState('loading'); setError(null);
+    try {
+      const payload = await lookupByCode(code);
+      if (current !== lookupRequestId.current) return;
+      acceptEnvelope(payload);
+      // Selecting an administrative area is not the user's GPS position.
+      setSelectedPosition(null);
+      if (showDirectory) setMobileView('directory');
+    } catch (caught) {
+      if (current !== lookupRequestId.current) return;
+      setState('error');
+      setError(caught instanceof ApiError ? caught.message : 'Không thể tải địa bàn lúc này.');
+    }
+  }, [acceptEnvelope]);
+
   useEffect(() => {
     if (policePortalRequested) return;
-    let cancelled = false;
-
-    const loadInitialArea = async () => {
-      setState('loading');
-      setError(null);
-      try {
-        const requestedCode = new URL(window.location.href).searchParams.get('area');
-        const payload = requestedCode ? await lookupByCode(requestedCode) : await loadXuanHuongArea();
-        if (cancelled) return;
-        acceptEnvelope(payload);
-        setQuery(payload.data.name);
-      } catch (caught) {
-        if (cancelled) return;
-        setState('error');
-        setError(caught instanceof ApiError ? caught.message : 'Không thể tải địa bàn lúc này.');
-      }
-    };
-
-    void loadInitialArea();
-
-    if (!navigator.geolocation) {
-      return () => { cancelled = true; };
-    }
-
-    void requestEntryLocation().then(
-      (position) => {
-        if (cancelled) return;
-        setSelectedPosition({ latitude: position.coords.latitude, longitude: position.coords.longitude });
-      },
-      () => undefined,
-    );
-
-    return () => { cancelled = true; };
-  }, [acceptEnvelope, policePortalRequested]);
+    const requestedCode = new URL(window.location.href).searchParams.get('area');
+    if (requestedCode) void selectAreaCode(requestedCode, false);
+    else showProvince();
+    return () => { lookupRequestId.current += 1; };
+  }, [areaNavigationVersion, policePortalRequested, selectAreaCode, showProvince]);
 
   const handleCoordinateSelect = useCallback((latitude: number, longitude: number) => {
     setMobileView('directory');
@@ -297,17 +285,7 @@ export default function App() {
 
   const chooseArea = async (item: AreaSummary) => {
     setQuery(item.name);
-    setState('loading');
-    setError(null);
-    try {
-      const payload = await lookupByCode(item.code);
-      acceptEnvelope(payload);
-      if (payload.data.center) setSelectedPosition(payload.data.center);
-      setMobileView('directory');
-    } catch (caught) {
-      setState('error');
-      setError(caught instanceof ApiError ? caught.message : 'Không thể tải địa bàn lúc này.');
-    }
+    await selectAreaCode(item.code);
   };
 
   const clearSearch = () => {
@@ -317,13 +295,11 @@ export default function App() {
   };
 
   const updateSearch = (value: string) => {
+    lookupRequestId.current += 1;
+    setState(area ? 'success' : 'idle');
+    setError(null);
     setQuery(value);
     setSearchSettled(false);
-    if (area && value.trim() !== area.name) {
-      setArea(null);
-      setSelectedPosition(null);
-      setState('idle');
-    }
   };
 
   const navigateToFeature = useCallback((feature: FeatureId) => {
@@ -458,7 +434,7 @@ export default function App() {
                   autoComplete="off"
                   value={query}
                   onChange={(event) => updateSearch(event.target.value)}
-                  placeholder="Ví dụ: Phường Xuân Hương…"
+                  placeholder="Tìm xã/phường hoặc mã địa bàn…"
                   aria-controls="area-suggestions"
                   aria-expanded={suggestions.length > 0}
                 />
@@ -467,6 +443,16 @@ export default function App() {
                 )}
                 <button type="button" className="directory-toggle" onClick={() => setMobileView((view) => view === 'map' ? 'directory' : 'map')} aria-label={mobileView === 'map' ? 'Mở danh bạ địa bàn' : 'Thu gọn danh bạ'} aria-expanded={mobileView === 'directory'} aria-controls="directory-results"><ContactRound size={20} aria-hidden="true" /></button>
               </div>
+              <div className="province-navigation">
+                <select aria-label="Chọn xã/phường" value={area?.code ?? ''} disabled={!overview}
+                  onChange={event => { if (event.target.value) void selectAreaCode(event.target.value); else showProvince(); }}>
+                  <option value="">{overview ? `Toàn tỉnh Lâm Đồng · ${overview.features.length} xã/phường` : overviewError ? 'Chưa tải được danh sách địa bàn' : 'Đang tải danh sách địa bàn…'}</option>
+                  {overview?.features.map(feature => <option key={feature.id} value={feature.id}>{feature.properties.name}</option>)}
+                </select>
+                {area && <button type="button" onClick={showProvince}>Toàn tỉnh</button>}
+              </div>
+              {overviewError && <div className="overview-error" role="alert">Chưa tải được ranh giới toàn tỉnh. <button type="button" onClick={() => setOverviewAttempt(value => value + 1)}>Thử lại</button></div>}
+              {!area && overview && <p className="province-hint">Chạm ranh giới để xem địa bàn.</p>}
               {(suggestions.length > 0 || searching) && (
                 <div className="suggestions" id="area-suggestions" role="listbox" aria-label="Kết quả tìm địa bàn">
                   {searching && suggestions.length === 0 ? (
@@ -504,8 +490,8 @@ export default function App() {
                 <div className="empty-state">
                   <span className="empty-state-icon"><ShieldCheck size={22} aria-hidden="true" /></span>
                   <div>
-                    <strong>Dữ liệu địa bàn đã được chuẩn hóa</strong>
-                    <span>Kết quả hiển thị trụ sở, danh bạ công khai và ranh giới GIS.</span>
+                    <strong>{overview ? `${overview.features.length} xã/phường trong dữ liệu Lâm Đồng` : 'Danh bạ địa bàn'}</strong>
+                    <span>Chọn xã/phường trên bản đồ hoặc trong danh sách để xem thông tin, trụ sở và danh bạ.</span>
                   </div>
                 </div>
               )
@@ -517,6 +503,8 @@ export default function App() {
             <Suspense fallback={<section id="map-panel" className="map-pane map-loading" aria-label="Đang tải bản đồ"><span className="loader" /> Đang tải bản đồ…</section>}>
               <MapPane
                 area={area}
+                overview={overview}
+                onAreaSelect={code => void selectAreaCode(code)}
                 selectedPosition={selectedPosition}
                 onCoordinateSelect={handleCoordinateSelect}
                 showDemoAlerts={showDemoAlerts}

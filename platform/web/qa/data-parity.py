@@ -16,6 +16,14 @@ def main():
     with sync_playwright() as pw:
         api = pw.request.new_context(base_url=args.base)
         assert api.get('/api/health').json()['dataSource'] == 'postgres'
+        overview = api.get('/api/v1/areas/overview').json()['data']
+        assert overview['type'] == 'FeatureCollection'
+        assert len(overview['features']) == 124
+        assert {f['id'] for f in overview['features']} == {l['code'] for l in plan['localities']}
+        for feature in overview['features']:
+            assert feature['geometry']['type'] in ['Polygon', 'MultiPolygon'] and feature['geometry']['coordinates']
+            assert set(feature['properties']) == {'code', 'name', 'localityType', 'provinceName'}
+        print('PASS province overview: all 124 unique boundaries, public metadata only', flush=True)
         for locality in plan['localities']:
             code = locality['code']
             response = api.get('/api/v1/lookup/by-code/' + code)

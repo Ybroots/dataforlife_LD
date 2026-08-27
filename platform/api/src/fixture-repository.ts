@@ -3,6 +3,7 @@ import { notificationTitle, paginateNotifications } from './citizen-notification
 import type { CitizenNotification, CitizenNotificationPage, NotificationQuery } from './types.js';
 import type {
   AreaLookupResponse,
+  AreaOverview,
   AreaSummary,
   CreateIncidentInput,
   CreateSosInput,
@@ -90,6 +91,11 @@ function publicSos(item: SosResponse): SosResponse {
 
 export class FixtureDirectoryRepository implements DirectoryRepository {
   readonly sourceName = 'fixture' as const;
+  async getAreaOverview(): Promise<AreaOverview> {
+    return { type: 'FeatureCollection', features: [{ type: 'Feature', id: demoArea.code,
+      properties: { code: demoArea.code, name: demoArea.name, localityType: demoArea.localityType, provinceName: demoArea.provinceName },
+      geometry: structuredClone(demoArea.boundary!) }] };
+  }
   async listUnitContacts() { return []; }
   private readonly incidents = new Map<string, IncidentResponse & { citizenId: string; clientRequestId: string }>();
   private readonly sosEvents = new Map<string, SosResponse & { citizenId: string; idempotencyKey: string }>();

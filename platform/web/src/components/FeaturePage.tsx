@@ -60,6 +60,7 @@ export function FeaturePage({ feature, onBack, onShowAlertsOnMap, selectedPositi
   const [assistantQuery, setAssistantQuery] = useState('');
   const [alerts, setAlerts] = useState<PublicAlert[]>([]);
   const [alertsLoading, setAlertsLoading] = useState(false);
+  const [alertsFailed, setAlertsFailed] = useState(false);
   const [feedbackIncidents, setFeedbackIncidents] = useState<Incident[]>([]);
   const [feedbackLoading, setFeedbackLoading] = useState(false);
 
@@ -68,9 +69,14 @@ export function FeaturePage({ feature, onBack, onShowAlertsOnMap, selectedPositi
   }, [feature]);
 
   useEffect(() => {
+    let cancelled = false;
+    setAlerts([]); setAlertsLoading(false); setAlertsFailed(false);
     if (feature !== 'alerts' || !areaCode) return;
     setAlertsLoading(true);
-    listPublicAlerts(areaCode).then(setAlerts).catch(() => setAlerts([])).finally(() => setAlertsLoading(false));
+    listPublicAlerts(areaCode).then(value => { if (!cancelled) setAlerts(value); })
+      .catch(() => { if (!cancelled) setAlertsFailed(true); })
+      .finally(() => { if (!cancelled) setAlertsLoading(false); });
+    return () => { cancelled = true; };
   }, [areaCode, feature]);
 
   useEffect(() => {
@@ -144,7 +150,9 @@ export function FeaturePage({ feature, onBack, onShowAlertsOnMap, selectedPositi
             </div>
             <div className="alert-demo-list">
               {alertsLoading && <p className="workflow-empty">Đang tải cảnh báo…</p>}
-              {!alertsLoading && alerts.length === 0 && <p className="workflow-empty">Hiện chưa có cảnh báo đang hiệu lực tại địa bàn.</p>}
+              {!areaCode && <p className="workflow-empty">Hãy chọn xã/phường trên bản đồ để xem cảnh báo đúng địa bàn.</p>}
+              {alertsFailed && <p className="workflow-empty" role="alert">Chưa tải được cảnh báo. Vui lòng thử mở lại địa bàn.</p>}
+              {areaCode && !alertsLoading && !alertsFailed && alerts.length === 0 && <p className="workflow-empty">Hiện chưa có cảnh báo đang hiệu lực tại địa bàn.</p>}
               {alerts.map((alert) => (
                 <article className="alert-demo-card" key={alert.id}>
                   <span className="alert-demo-icon"><ShieldAlert size={21} aria-hidden="true" /></span>

@@ -13,7 +13,7 @@ async page => {
   await page.reload();
   const citizenEntry = page.getByRole('button',{name:'Người dân Tra cứu địa bàn, gửi phản ánh và cầu cứu khẩn cấp',exact:true});
   if (await citizenEntry.isVisible()) await citizenEntry.click();
-  await page.locator('.map-canvas[data-map-loaded="true"][data-boundary-rendered]').waitFor({timeout:30000});
+  await page.locator('.map-canvas[data-map-loaded="true"][data-overview-count="124"]').waitFor({timeout:45000});
   const skip = page.getByRole('button',{name:'Bỏ qua hướng dẫn',exact:true});
   if(await skip.isVisible()) await skip.click();
   if (!responses.some(r=>r.url.includes('maplibre-gl-worker-') && r.status===200 && /javascript/.test(r.type))) throw new Error('Worker not delivered as JavaScript');

@@ -7,10 +7,12 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { buildCitizenMapPoints, buildPublicAlertPoints, pointsWithinZone, type CitizenMapPoint } from '../citizen-map-points';
 import { listPublicAlerts } from '../api';
 import { createPublicMapStyle } from '../map-style';
-import type { AreaLookup, Hotline, PublicAlert } from '../types';
+import type { AreaLookup, AreaOverview, Hotline, PublicAlert } from '../types';
 
 interface MapPaneProps {
   area: AreaLookup | null;
+  overview: AreaOverview | null;
+  onAreaSelect: (code: string) => void;
   selectedPosition: { latitude: number; longitude: number } | null;
   onCoordinateSelect: (latitude: number, longitude: number) => void;
   showDemoAlerts: boolean;
@@ -19,6 +21,9 @@ interface MapPaneProps {
 }
 
 const SOURCE_ID = 'verified-area';
+const PROVINCE_SOURCE_ID = 'province-areas';
+const PROVINCE_FILL_ID = 'province-areas-fill';
+const PROVINCE_LINE_ID = 'province-areas-line';
 const FILL_LAYER_ID = 'verified-area-fill';
 const LINE_LAYER_ID = 'verified-area-line';
 const SERVICE_AREA_SOURCE_ID = 'historical-service-areas';
@@ -66,28 +71,29 @@ function fitAreaBoundary(
   map: MapLibreMap,
   boundary: NonNullable<AreaLookup['boundary']>,
   container: HTMLDivElement | null,
-  duration = 500,
+  duration = 260,
 ): void {
   const bounds = new maplibregl.LngLatBounds();
   collectBounds(boundary.coordinates, bounds);
   if (bounds.isEmpty()) return;
   const rect = container?.getBoundingClientRect();
   const padding = rect && rect.height < 360
-    ? { top: 48, right: 22, bottom: 16, left: 22 }
+    ? { top: 90, right: 22, bottom: 24, left: 22 }
     : rect && rect.width < 600
-      ? { top: 62, right: 22, bottom: 24, left: 22 }
+      ? { top: 124, right: 22, bottom: 68, left: 22 }
       : 72;
-  map.fitBounds(bounds, { padding, duration, maxZoom: 14 });
+  map.fitBounds(bounds, { padding, duration: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : duration, maxZoom: 14 });
 }
 
 function telHref(phone: string): string {
   return `tel:${phone.replace(/[^0-9+]/g, '')}`;
 }
 
-export function MapPane({ area, selectedPosition, onCoordinateSelect, showDemoAlerts, onOpenSos }: MapPaneProps) {
+export function MapPane({ area, overview, onAreaSelect, selectedPosition, onCoordinateSelect, showDemoAlerts, onOpenSos }: MapPaneProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const onCoordinateSelectRef = useRef(onCoordinateSelect);
+  const onAreaSelectRef = useRef(onAreaSelect);
   const markerRef = useRef<maplibregl.Marker | null>(null);
   const alertMarkersRef = useRef<maplibregl.Marker[]>([]);
   const demoOfficerMarkersRef = useRef<maplibregl.Marker[]>([]);
@@ -110,6 +116,9 @@ export function MapPane({ area, selectedPosition, onCoordinateSelect, showDemoAl
   const [alertsFailed, setAlertsFailed] = useState(false);
 
   const mapPoints = useMemo(() => [...buildCitizenMapPoints(area), ...buildPublicAlertPoints(area, publicAlerts)], [area, publicAlerts]);
+  const provinceBoundary = useMemo(() => overview ? { type: 'MultiPolygon' as const,
+    coordinates: overview.features.flatMap(feature => feature.geometry.type === 'Polygon'
+      ? [feature.geometry.coordinates as number[][][]] : feature.geometry.coordinates as number[][][][]) } : null, [overview]);
 
   useEffect(() => {
     let cancelled = false;
@@ -182,7 +191,8 @@ export function MapPane({ area, selectedPosition, onCoordinateSelect, showDemoAl
 
   useEffect(() => {
     onCoordinateSelectRef.current = onCoordinateSelect;
-  }, [onCoordinateSelect]);
+    onAreaSelectRef.current = onAreaSelect;
+  }, [onCoordinateSelect, onAreaSelect]);
 
   useEffect(() => {
     const selectedFromLookup = area?.serviceAreas.find((serviceArea) => serviceArea.selected)?.code ?? null;
@@ -204,8 +214,8 @@ export function MapPane({ area, selectedPosition, onCoordinateSelect, showDemoAl
     if (!containerRef.current || mapRef.current) return;
     const map = new maplibregl.Map({
       container: containerRef.current,
-      center: [108.441, 11.944],
-      zoom: 12.8,
+      center: [108.25, 11.55],
+      zoom: 7,
       attributionControl: false,
       style: createPublicMapStyle(),
     });
@@ -216,6 +226,13 @@ export function MapPane({ area, selectedPosition, onCoordinateSelect, showDemoAl
       window.clearTimeout(loadTimeout);
       setTileWarning(false);
       containerRef.current?.setAttribute('data-map-loaded', 'true');
+      map.addSource(PROVINCE_SOURCE_ID, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+      map.addLayer({ id: PROVINCE_FILL_ID, type: 'fill', source: PROVINCE_SOURCE_ID,
+        paint: { 'fill-color': '#667782', 'fill-opacity': 0.06 } });
+      map.addLayer({ id: PROVINCE_LINE_ID, type: 'line', source: PROVINCE_SOURCE_ID,
+        paint: { 'line-color': '#526a77', 'line-width': 1, 'line-opacity': 0.75 } });
+      map.on('mouseenter', PROVINCE_FILL_ID, () => { map.getCanvas().style.cursor = 'pointer'; });
+      map.on('mouseleave', PROVINCE_FILL_ID, () => { map.getCanvas().style.cursor = ''; });
       map.addSource(SOURCE_ID, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
       map.addSource(SERVICE_AREA_SOURCE_ID, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
       map.addSource(RADIUS_SOURCE_ID, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
@@ -295,6 +312,12 @@ export function MapPane({ area, selectedPosition, onCoordinateSelect, showDemoAl
       }
       closePointPopup();
       setSelectedServiceAreaCode(null);
+      const provinceFeature = map.getLayer(PROVINCE_FILL_ID)
+        ? map.queryRenderedFeatures(event.point, { layers: [PROVINCE_FILL_ID] })[0] : undefined;
+      if (typeof provinceFeature?.properties?.code === 'string') {
+        onAreaSelectRef.current(provinceFeature.properties.code);
+        return;
+      }
       onCoordinateSelectRef.current(event.lngLat.lat, event.lngLat.lng);
     });
     mapRef.current = map;
@@ -325,6 +348,7 @@ export function MapPane({ area, selectedPosition, onCoordinateSelect, showDemoAl
         if (!map) return;
         map.resize();
         if (area?.boundary) fitAreaBoundary(map, area.boundary, containerRef.current, 0);
+        else if (provinceBoundary) fitAreaBoundary(map, provinceBoundary, containerRef.current, 0);
       });
     };
     resizeAndFit();
@@ -333,7 +357,24 @@ export function MapPane({ area, selectedPosition, onCoordinateSelect, showDemoAl
       window.cancelAnimationFrame(frame);
       window.removeEventListener('resize', resizeAndFit);
     };
-  }, [area]);
+  }, [area, provinceBoundary]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !overview) return;
+    const markLoaded = () => {
+      if (map.getSource(PROVINCE_SOURCE_ID) && map.isSourceLoaded(PROVINCE_SOURCE_ID)) {
+        containerRef.current?.setAttribute('data-overview-count', String(overview.features.length));
+      }
+    };
+    const update = () => {
+      const source = map.getSource(PROVINCE_SOURCE_ID) as GeoJSONSource | undefined;
+      if (source) source.setData(overview);
+    };
+    map.on('sourcedata', markLoaded);
+    if (map.getSource(PROVINCE_SOURCE_ID)) update(); else map.once('load', update);
+    return () => { map.off('load', update); map.off('sourcedata', markLoaded); };
+  }, [overview]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -377,6 +418,7 @@ export function MapPane({ area, selectedPosition, onCoordinateSelect, showDemoAl
       if (!area?.boundary) {
         source.setData({ type: 'FeatureCollection', features: [] });
         containerRef.current?.removeAttribute('data-boundary-rendered');
+        if (provinceBoundary) fitAreaBoundary(map, provinceBoundary, containerRef.current);
         return;
       }
       const feature = {
@@ -392,7 +434,7 @@ export function MapPane({ area, selectedPosition, onCoordinateSelect, showDemoAl
     if (map.getSource(SOURCE_ID)) updateBoundary();
     else map.once('load', updateBoundary);
     return () => { map.off('load', updateBoundary); };
-  }, [area]);
+  }, [area, provinceBoundary]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -543,7 +585,7 @@ export function MapPane({ area, selectedPosition, onCoordinateSelect, showDemoAl
     const map = mapRef.current;
     if (!map) return;
     const updateVisibility = () => {
-      for (const layerId of [FILL_LAYER_ID, LINE_LAYER_ID]) {
+      for (const layerId of [PROVINCE_FILL_ID, PROVINCE_LINE_ID, FILL_LAYER_ID, LINE_LAYER_ID]) {
         if (map.getLayer(layerId)) map.setLayoutProperty(layerId, 'visibility', boundaryVisible ? 'visible' : 'none');
       }
     };
@@ -727,6 +769,7 @@ export function MapPane({ area, selectedPosition, onCoordinateSelect, showDemoAl
             setLocating(true);
             navigator.geolocation.getCurrentPosition((pos) => {
               setLocating(false);
+              onCoordinateSelectRef.current(pos.coords.latitude, pos.coords.longitude);
               mapRef.current?.flyTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 15, duration: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 260 });
             }, () => {
               setLocating(false);

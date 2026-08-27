@@ -5,6 +5,7 @@ import { CitizenNotificationStore } from './citizen-notifications.js';
 import type { CitizenNotificationPage, NotificationQuery } from './types.js';
 import type {
   AreaLookupResponse,
+  AreaOverview,
   AreaSummary,
   CreateIncidentInput,
   CreateSosInput,
@@ -101,6 +102,17 @@ export class PostgresDirectoryRepository implements DirectoryRepository {
       localityType: row.locality_type,
       provinceName: row.province_name,
     }));
+  }
+
+  async getAreaOverview(): Promise<AreaOverview> {
+    const result = await this.pool.query<AreaOverview['features'][number]>(
+      `SELECT 'Feature'::text AS type, l.code AS id,
+        json_build_object('code',l.code,'name',l.name,'localityType',l.locality_type,'provinceName',l.province_name) AS properties,
+        ST_AsGeoJSON(ST_SimplifyPreserveTopology(b.geom,0.0002),6)::json AS geometry
+       FROM localities l JOIN boundaries b ON b.locality_id=l.id
+       WHERE l.visibility='public' ORDER BY l.name, l.code`,
+    );
+    return { type: 'FeatureCollection', features: result.rows };
   }
 
   async lookupByCode(code: string): Promise<AreaLookupResponse | null> {

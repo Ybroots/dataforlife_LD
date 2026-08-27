@@ -5,6 +5,11 @@ export interface AreaSummary {
   provinceName: string | null;
 }
 
+export interface AreaOverview {
+  type: 'FeatureCollection';
+  features: Array<{ type: 'Feature'; id: string; properties: AreaSummary; geometry: NonNullable<AreaLookup['boundary']> }>;
+}
+
 export interface DirectoryEntry {
   id: string;
   displayName: string;

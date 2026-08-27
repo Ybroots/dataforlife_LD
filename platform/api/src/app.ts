@@ -149,6 +149,11 @@ export async function buildApp(
   app.get('/health', async () => ({ status: 'ok', dataSource: repository.sourceName,
     ...(options.releaseValidation ? { releaseValidation: true } : {}) }));
 
+  app.get('/v1/areas/overview', async (_request, reply) => {
+    reply.header('Cache-Control', 'public, max-age=300');
+    return { data: await repository.getAreaOverview(), meta: { dataSource: repository.sourceName } };
+  });
+
   app.get<{ Querystring: { query?: string; limit?: string } }>('/v1/areas', async (request) => {
     const query = request.query.query?.trim() ?? '';
     const requestedLimit = Number(request.query.limit ?? 10);

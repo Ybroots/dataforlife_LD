@@ -1,5 +1,6 @@
 import type {
   AreaSummary,
+  AreaOverview,
   CitizenSession,
   CitizenNotificationPage,
   Incident,
@@ -26,6 +27,10 @@ import type {
 } from './types';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
+
+export async function getAreaOverview(): Promise<{ data: AreaOverview; meta: { dataSource: 'postgres' | 'fixture' } }> {
+  return request('/v1/areas/overview');
+}
 
 export async function listUnitContacts(): Promise<PublicUnitContact[]> {
   return (await request<{ data: PublicUnitContact[] }>('/v1/directory/units')).data;

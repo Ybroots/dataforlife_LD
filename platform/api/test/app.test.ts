@@ -11,6 +11,18 @@ afterEach(async () => {
 });
 
 describe('directory API', () => {
+  it('provides all public overview geometry with no directory or raw source data', async () => {
+    app = await buildApp(new FixtureDirectoryRepository());
+    const response = await app.inject({ method: 'GET', url: '/v1/areas/overview' });
+    expect(response.statusCode).toBe(200);
+    expect(response.headers['cache-control']).toBe('public, max-age=300');
+    const overview = response.json().data;
+    expect(overview.type).toBe('FeatureCollection');
+    expect(overview.features).toHaveLength(1);
+    expect(overview.features[0].properties.code).toBe('DEMO-DA-LAT');
+    expect(Object.keys(overview.features[0].properties).sort()).toEqual(['code', 'localityType', 'name', 'provinceName']);
+    expect(overview.features[0].geometry.coordinates.length).toBeGreaterThan(0);
+  });
   it('resolves a locality by coordinates and returns its directory', async () => {
     app = await buildApp(new FixtureDirectoryRepository());
     const response = await app.inject({
