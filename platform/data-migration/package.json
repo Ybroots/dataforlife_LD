@@ -1,0 +1,23 @@
+{
+  "name": "@cskv/data-migration",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "plan": "tsx src/index.ts",
+    "apply": "tsx src/index.ts --apply",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "firebase": "12.18.0",
+    "pg": "8.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "26.3.0",
+    "@types/pg": "8.23.1",
+    "tsx": "4.23.12",
+    "typescript": "7.0.2",
+    "vitest": "4.1.11"
+  }
+}

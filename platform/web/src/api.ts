@@ -1,0 +1,371 @@
+import type {
+  AreaSummary,
+  CitizenSession,
+  CitizenNotificationPage,
+  Incident,
+  IncidentAttachment,
+  IncidentMessage,
+  IncidentStatus,
+  Hotline,
+  LookupEnvelope,
+  OfficerNotification,
+  OfficerStatistics,
+  OperationalMapPoint,
+  OperationalMapPointInput,
+  OfficerQueueItem,
+  PatrolSession,
+  PublicAlert,
+  SatisfactionRating,
+  ShiftSummary,
+  SosEvent,
+  SosStatus,
+  WorkflowActor,
+  WorkflowMeta,
+  StatisticsPeriod,
+} from './types';
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
+
+export async function listCitizenNotifications(options: { cursor?: string; unreadOnly?: boolean; signal?: AbortSignal } = {}): Promise<CitizenNotificationPage> {
+  const params = new URLSearchParams({ limit: '30', unread: options.unreadOnly ? '1' : '0' });
+  if (options.cursor) params.set('cursor', options.cursor);
+  const payload = await request<{ data: CitizenNotificationPage }>(`/v1/citizen/notifications?${params}`, { signal: options.signal });
+  return payload.data;
+}
+
+export async function markCitizenNotificationsRead(ids: string[]): Promise<void> {
+  await request('/v1/citizen/notifications/read', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids }),
+  });
+}
+
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly code: string,
+  ) {
+    super(message);
+  }
+}
+
+async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const response = await fetch(`${API_BASE}${path}`, {
+    ...init,
+    credentials: 'include',
+    headers: { Accept: 'application/json', ...init.headers },
+  });
+  if (response.status === 204) return undefined as T;
+  const payload = await response.json() as { message?: string; error?: string } & T;
+  if (!response.ok) {
+    throw new ApiError(
+      payload.message || 'Không thể kết nối hệ thống.',
+      response.status,
+      payload.error || 'REQUEST_FAILED',
+    );
+  }
+  return payload;
+}
+
+function citizenHeaders(): HeadersInit {
+  return { 'Content-Type': 'application/json' };
+}
+
+function officerHeaders(): HeadersInit {
+  return { 'Content-Type': 'application/json' };
+}
+
+export async function signInOfficer(username: string, password: string): Promise<WorkflowActor> {
+  const payload = await request<{ data: WorkflowActor }>('/v1/auth/officer/login', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }),
+  });
+  return payload.data;
+}
+
+export async function getOfficerSession(): Promise<WorkflowActor | null> {
+  try {
+    const payload = await request<{ data: WorkflowActor }>('/v1/auth/officer/session');
+    return payload.data;
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) return null;
+    throw error;
+  }
+}
+
+export async function signOutOfficer(): Promise<void> {
+  await request<void>('/v1/auth/officer/logout', { method: 'POST' });
+}
+
+export async function signInCitizen(username: string, password: string): Promise<CitizenSession> {
+  const payload = await request<{ data: CitizenSession }>('/v1/auth/citizen/login', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }),
+  });
+  return payload.data;
+}
+
+export async function getCitizenSession(): Promise<CitizenSession | null> {
+  try {
+    const payload = await request<{ data: CitizenSession }>('/v1/auth/citizen/session');
+    return payload.data;
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) return null;
+    throw error;
+  }
+}
+
+export async function signOutCitizen(): Promise<void> {
+  await request<void>('/v1/auth/citizen/logout', { method: 'POST' });
+}
+
+export async function searchAreas(query: string): Promise<AreaSummary[]> {
+  const payload = await request<{ data: AreaSummary[] }>(`/v1/areas?query=${encodeURIComponent(query)}&limit=8`);
+  return payload.data;
+}
+
+export async function lookupByCode(code: string): Promise<LookupEnvelope> {
+  return request<LookupEnvelope>(`/v1/lookup/by-code/${encodeURIComponent(code)}`);
+}
+
+export async function lookupByLocation(latitude: number, longitude: number): Promise<LookupEnvelope> {
+  return request<LookupEnvelope>(`/v1/lookup/by-location?lat=${latitude}&lng=${longitude}`);
+}
+
+export async function listHotlines(): Promise<Hotline[]> {
+  const payload = await request<{ data: Hotline[] }>('/v1/hotlines');
+  return payload.data;
+}
+
+export async function listPublicAlerts(areaCode: string): Promise<PublicAlert[]> {
+  const payload = await request<{ data: PublicAlert[] }>(`/v1/public/alerts?areaCode=${encodeURIComponent(areaCode)}`);
+  return payload.data;
+}
+
+export async function createIncident(input: {
+  clientRequestId: string;
+  category: Incident['category'];
+  summary: string;
+  description: string;
+  locationNote?: string | null;
+  contactPhone?: string | null;
+  latitude: number;
+  longitude: number;
+  accuracyM?: number | null;
+  attachments: Array<{
+    fileName: string;
+    mimeType: IncidentAttachment['mimeType'];
+    sizeBytes: number;
+    dataBase64: string;
+  }>;
+}): Promise<{ data: Incident; meta: WorkflowMeta }> {
+  return request('/v1/citizen/incidents', {
+    method: 'POST', headers: citizenHeaders(), body: JSON.stringify(input),
+  });
+}
+
+export async function listCitizenIncidents(): Promise<{ data: Incident[]; meta: WorkflowMeta }> {
+  return request('/v1/citizen/incidents', { headers: citizenHeaders() });
+}
+
+export async function getCitizenIncident(receiptCode: string): Promise<Incident> {
+  return (await request<{ data: Incident }>(`/v1/citizen/incidents/${encodeURIComponent(receiptCode)}`)).data;
+}
+
+export async function getCitizenSos(receiptCode: string): Promise<SosEvent> {
+  return (await request<{ data: SosEvent }>(`/v1/citizen/sos/${encodeURIComponent(receiptCode)}`)).data;
+}
+
+export async function listCitizenIncidentMessages(receiptCode: string): Promise<IncidentMessage[]> {
+  const payload = await request<{ data: IncidentMessage[] }>(`/v1/citizen/incidents/${encodeURIComponent(receiptCode)}/messages`, { headers: citizenHeaders() });
+  return payload.data;
+}
+
+export async function addCitizenIncidentMessage(receiptCode: string, message: string): Promise<IncidentMessage> {
+  const payload = await request<{ data: IncidentMessage }>(`/v1/citizen/incidents/${encodeURIComponent(receiptCode)}/messages`, {
+    method: 'POST', headers: citizenHeaders(), body: JSON.stringify({ message }),
+  });
+  return payload.data;
+}
+
+export async function addCitizenIncidentAttachment(receiptCode: string, attachment: {
+  fileName: string; mimeType: IncidentAttachment['mimeType']; sizeBytes: number; dataBase64: string;
+}): Promise<IncidentAttachment> {
+  const payload = await request<{ data: IncidentAttachment }>(`/v1/citizen/incidents/${encodeURIComponent(receiptCode)}/attachments`, {
+    method: 'POST', headers: citizenHeaders(), body: JSON.stringify({ attachment }),
+  });
+  return payload.data;
+}
+
+export async function createSatisfactionRating(receiptCode: string, score: number, comment: string): Promise<SatisfactionRating> {
+  const payload = await request<{ data: SatisfactionRating }>(`/v1/citizen/incidents/${encodeURIComponent(receiptCode)}/rating`, {
+    method: 'POST', headers: citizenHeaders(), body: JSON.stringify({ score, comment }),
+  });
+  return payload.data;
+}
+
+export async function createSos(input: {
+  idempotencyKey: string;
+  category: SosEvent['category'];
+  note?: string | null;
+  contactPhone?: string | null;
+  latitude: number;
+  longitude: number;
+  accuracyM?: number | null;
+  deviceTimestamp: string;
+}): Promise<{ data: SosEvent; meta: WorkflowMeta }> {
+  return request('/v1/citizen/sos', {
+    method: 'POST', headers: citizenHeaders(), body: JSON.stringify(input),
+  });
+}
+
+export async function listCitizenSos(): Promise<{ data: SosEvent[]; meta: WorkflowMeta }> {
+  return request('/v1/citizen/sos', { headers: citizenHeaders() });
+}
+
+export async function cancelCitizenSos(receiptCode: string, note: string): Promise<{ data: SosEvent; meta: WorkflowMeta }> {
+  return request(`/v1/citizen/sos/${encodeURIComponent(receiptCode)}/cancel`, {
+    method: 'POST', headers: citizenHeaders(), body: JSON.stringify({ note }),
+  });
+}
+
+export async function listOfficerQueue(kind?: 'incident' | 'sos'): Promise<{ data: OfficerQueueItem[]; meta: WorkflowMeta }> {
+  return request(`/v1/officer/queue${kind ? `?kind=${kind}` : ''}`, { headers: officerHeaders() });
+}
+
+export async function listWorkflowActors(): Promise<{ data: WorkflowActor[]; meta: WorkflowMeta }> {
+  return request('/v1/officer/actors', { headers: officerHeaders() });
+}
+
+export async function getOfficerIncident(id: string): Promise<{ data: Incident; meta: WorkflowMeta }> {
+  return request(`/v1/officer/incidents/${encodeURIComponent(id)}`, { headers: officerHeaders() });
+}
+
+export async function listOfficerIncidentMessages(id: string): Promise<IncidentMessage[]> {
+  const payload = await request<{ data: IncidentMessage[] }>(`/v1/officer/incidents/${encodeURIComponent(id)}/messages`, { headers: officerHeaders() });
+  return payload.data;
+}
+
+export async function addOfficerIncidentMessage(id: string, message: string, requestMedia: boolean): Promise<IncidentMessage> {
+  const payload = await request<{ data: IncidentMessage }>(`/v1/officer/incidents/${encodeURIComponent(id)}/messages`, {
+    method: 'POST', headers: officerHeaders(), body: JSON.stringify({ message, requestMedia }),
+  });
+  return payload.data;
+}
+
+export async function addOfficerIncidentAttachment(id: string, attachment: {
+  fileName: string; mimeType: IncidentAttachment['mimeType']; sizeBytes: number; dataBase64: string;
+}): Promise<IncidentAttachment> {
+  const payload = await request<{ data: IncidentAttachment }>(`/v1/officer/incidents/${encodeURIComponent(id)}/attachments`, {
+    method: 'POST', headers: officerHeaders(), body: JSON.stringify({ attachment }),
+  });
+  return payload.data;
+}
+
+export async function createPublicAlert(input: Omit<PublicAlert, 'id' | 'areaCode' | 'status' | 'createdAt'>): Promise<PublicAlert> {
+  const payload = await request<{ data: PublicAlert }>('/v1/officer/alerts', {
+    method: 'POST', headers: officerHeaders(), body: JSON.stringify(input),
+  });
+  return payload.data;
+}
+
+export async function listPatrolSessions(): Promise<PatrolSession[]> {
+  const payload = await request<{ data: PatrolSession[] }>('/v1/officer/patrols', { headers: officerHeaders() });
+  return payload.data;
+}
+
+export async function createPatrolSession(title: string, routeNote: string, scheduledAt: string): Promise<PatrolSession> {
+  const payload = await request<{ data: PatrolSession }>('/v1/officer/patrols', {
+    method: 'POST', headers: officerHeaders(), body: JSON.stringify({ title, routeNote, scheduledAt }),
+  });
+  return payload.data;
+}
+
+export async function updatePatrolSession(id: string, action: 'start' | 'pause' | 'resume' | 'checkin' | 'complete', latitude?: number, longitude?: number): Promise<PatrolSession> {
+  const payload = await request<{ data: PatrolSession }>(`/v1/officer/patrols/${encodeURIComponent(id)}/actions`, {
+    method: 'POST', headers: officerHeaders(), body: JSON.stringify({ action, latitude, longitude }),
+  });
+  return payload.data;
+}
+
+export async function getShiftSummary(): Promise<ShiftSummary> {
+  const payload = await request<{ data: ShiftSummary }>('/v1/officer/shift-summary', { headers: officerHeaders() });
+  return payload.data;
+}
+
+export async function confirmShiftReport(note: string): Promise<{ id: string; confirmedAt: string; summary: ShiftSummary }> {
+  const payload = await request<{ data: { id: string; confirmedAt: string; summary: ShiftSummary } }>('/v1/officer/shift-reports', {
+    method: 'POST', headers: officerHeaders(), body: JSON.stringify({ note }),
+  });
+  return payload.data;
+}
+
+export async function getOfficerStatistics(period: StatisticsPeriod, date: string): Promise<OfficerStatistics> {
+  const payload = await request<{ data: OfficerStatistics }>(`/v1/officer/statistics?period=${period}&date=${encodeURIComponent(date)}`, { headers: officerHeaders() });
+  return payload.data;
+}
+
+export async function listOperationalMapPoints(): Promise<OperationalMapPoint[]> {
+  const payload = await request<{ data: OperationalMapPoint[] }>('/v1/officer/map-points', { headers: officerHeaders() });
+  return payload.data;
+}
+
+export async function createOperationalMapPoint(input: OperationalMapPointInput): Promise<OperationalMapPoint> {
+  const payload = await request<{ data: OperationalMapPoint }>('/v1/officer/map-points', {
+    method: 'POST', headers: officerHeaders(), body: JSON.stringify(input),
+  });
+  return payload.data;
+}
+
+export async function updateOperationalMapPoint(id: string, input: OperationalMapPointInput): Promise<OperationalMapPoint> {
+  const payload = await request<{ data: OperationalMapPoint }>(`/v1/officer/map-points/${encodeURIComponent(id)}`, {
+    method: 'PATCH', headers: officerHeaders(), body: JSON.stringify(input),
+  });
+  return payload.data;
+}
+
+export async function deleteOperationalMapPoint(id: string): Promise<void> {
+  await request<void>(`/v1/officer/map-points/${encodeURIComponent(id)}`, { method: 'DELETE' });
+}
+
+export async function getIncidentAttachmentUrl(scope: 'citizen' | 'officer', incidentKey: string, attachmentId: string): Promise<string> {
+  const path = scope === 'citizen'
+    ? `/v1/citizen/incidents/${encodeURIComponent(incidentKey)}/attachments/${encodeURIComponent(attachmentId)}/content`
+    : `/v1/officer/incidents/${encodeURIComponent(incidentKey)}/attachments/${encodeURIComponent(attachmentId)}/content`;
+  const response = await fetch(`${API_BASE}${path}`, {
+    credentials: 'include',
+    headers: undefined,
+  });
+  if (!response.ok) throw new ApiError('Không thể tải tệp minh chứng.', response.status, 'ATTACHMENT_LOAD_FAILED');
+  return URL.createObjectURL(await response.blob());
+}
+
+export async function getOfficerSos(id: string): Promise<{ data: SosEvent; meta: WorkflowMeta }> {
+  return request(`/v1/officer/sos/${encodeURIComponent(id)}`, { headers: officerHeaders() });
+}
+
+export async function transitionOfficerIncident(
+  id: string,
+  toStatus: IncidentStatus,
+  note: string,
+  assignedOfficerId?: string | null,
+  publicMessage = false,
+): Promise<{ data: Incident; meta: WorkflowMeta }> {
+  return request(`/v1/officer/incidents/${encodeURIComponent(id)}/transitions`, {
+    method: 'POST', headers: officerHeaders(), body: JSON.stringify({ toStatus, note, assignedOfficerId, publicMessage }),
+  });
+}
+
+export async function transitionOfficerSos(
+  id: string,
+  toStatus: SosStatus,
+  note: string,
+  assignedOfficerId?: string | null,
+  publicMessage = false,
+): Promise<{ data: SosEvent; meta: WorkflowMeta }> {
+  return request(`/v1/officer/sos/${encodeURIComponent(id)}/transitions`, {
+    method: 'POST', headers: officerHeaders(), body: JSON.stringify({ toStatus, note, assignedOfficerId, publicMessage }),
+  });
+}
+
+export async function listOfficerNotifications(): Promise<{ data: OfficerNotification[]; meta: WorkflowMeta }> {
+  return request('/v1/officer/notifications', { headers: officerHeaders() });
+}

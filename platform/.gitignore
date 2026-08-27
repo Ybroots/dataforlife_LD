@@ -1,0 +1,7 @@
+.env
+e2e/artifacts/
+e2e/__pycache__/
+*.pyc
+backups/
+test-results/
+web/*.png
