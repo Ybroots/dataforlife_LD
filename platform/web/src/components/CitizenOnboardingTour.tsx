@@ -112,9 +112,11 @@ export function CitizenOnboardingTour({ open, onClose }: { open: boolean; onClos
       });
       node.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
     };
-    const timer = window.setTimeout(update, 80); update();
+    const timer = window.setTimeout(update, 80);
+    const targetRefresh = window.setInterval(update, 320);
+    update();
     window.addEventListener('resize', update); window.addEventListener('scroll', update, true);
-    return () => { window.clearTimeout(timer); window.removeEventListener('resize', update); window.removeEventListener('scroll', update, true); };
+    return () => { window.clearTimeout(timer); window.clearInterval(targetRefresh); window.removeEventListener('resize', update); window.removeEventListener('scroll', update, true); };
   }, [open, step]);
   useEffect(() => {
     if (!open) return;
