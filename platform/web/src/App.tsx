@@ -230,6 +230,10 @@ export default function App() {
 
   const acceptEnvelope = useCallback((payload: Awaited<ReturnType<typeof lookupByCode>>) => {
     setArea(payload.data);
+    setQuery(payload.data.name);
+    const url = new URL(window.location.href);
+    url.searchParams.set('area', payload.data.code);
+    window.history.replaceState(window.history.state, '', url);
     setIsFixture(payload.meta.dataSource === 'fixture');
     setState('success');
     setError(null);
@@ -253,22 +257,23 @@ export default function App() {
     if (policePortalRequested) return;
     let cancelled = false;
 
-    const loadXuanHuongDemo = async () => {
+    const loadInitialArea = async () => {
       setState('loading');
       setError(null);
       try {
-        const payload = await loadXuanHuongArea();
+        const requestedCode = new URL(window.location.href).searchParams.get('area');
+        const payload = requestedCode ? await lookupByCode(requestedCode) : await loadXuanHuongArea();
         if (cancelled) return;
         acceptEnvelope(payload);
         setQuery(payload.data.name);
       } catch (caught) {
         if (cancelled) return;
         setState('error');
-        setError(caught instanceof ApiError ? caught.message : 'Không thể tải bản demo Phường Xuân Hương lúc này.');
+        setError(caught instanceof ApiError ? caught.message : 'Không thể tải địa bàn lúc này.');
       }
     };
 
-    void loadXuanHuongDemo();
+    void loadInitialArea();
 
     if (!navigator.geolocation) {
       return () => { cancelled = true; };
@@ -500,7 +505,7 @@ export default function App() {
                   <span className="empty-state-icon"><ShieldCheck size={22} aria-hidden="true" /></span>
                   <div>
                     <strong>Dữ liệu địa bàn đã được chuẩn hóa</strong>
-                    <span>Kết quả hiển thị trụ sở, một đầu mối công khai và ranh giới GIS.</span>
+                    <span>Kết quả hiển thị trụ sở, danh bạ công khai và ranh giới GIS.</span>
                   </div>
                 </div>
               )
@@ -528,6 +533,7 @@ export default function App() {
             key={caseNavigationVersion}
             feature={activeFeature}
             areaCode={area?.code ?? null}
+            areaName={area?.name ?? null}
             selectedPosition={selectedPosition}
             isAuthenticated={Boolean(citizenSession)}
             onRequireLogin={(action) => { setCitizenLoginAction(action); setCitizenLoginOpen(true); }}

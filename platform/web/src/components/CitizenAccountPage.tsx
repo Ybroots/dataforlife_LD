@@ -4,13 +4,14 @@ import vneidLogoUrl from '../../../../assets/images/vneid-logo.png';
 
 interface CitizenAccountPageProps {
   session: CitizenSession | null;
+  areaName: string | null;
   onLogin: () => void;
   onLogout: () => void;
   onNavigate: (feature: 'reports' | 'feedback') => void;
   onStartTour: () => void;
 }
 
-export function CitizenAccountPage({ session, onLogin, onLogout, onNavigate, onStartTour }: CitizenAccountPageProps) {
+export function CitizenAccountPage({ session, areaName, onLogin, onLogout, onNavigate, onStartTour }: CitizenAccountPageProps) {
   return <section className="citizen-account-page" aria-labelledby="citizen-account-title">
     <div className="account-hero">
       <span className="account-avatar">{session ? <UserRoundCheck /> : <img src={vneidLogoUrl} alt="" />}</span>
@@ -20,7 +21,7 @@ export function CitizenAccountPage({ session, onLogin, onLogout, onNavigate, onS
 
     {session ? <div className="account-identity-card">
       <header><img src={vneidLogoUrl} alt="Biểu trưng VNeID" /><div><small>MÃ TÀI KHOẢN THỬ NGHIỆM</small><strong>{session.id}</strong></div></header>
-      <dl><div><dt>Họ tên hiển thị</dt><dd>{session.displayName}</dd></div><div><dt>Địa bàn đang sử dụng</dt><dd>Phường Xuân Hương – Đà Lạt</dd></div><div><dt>Xác thực định danh</dt><dd>Đang phát triển kết nối VNeID chính thức</dd></div></dl>
+      <dl><div><dt>Họ tên hiển thị</dt><dd>{session.displayName}</dd></div><div><dt>Địa bàn đang xem</dt><dd>{areaName || 'Chưa chọn địa bàn'}</dd></div><div><dt>Xác thực định danh</dt><dd>Đang phát triển kết nối VNeID chính thức</dd></div></dl>
     </div> : <button className="account-login-button" type="button" onClick={onLogin}><img src={vneidLogoUrl} alt="" /> Đăng nhập bằng VNeID <ChevronRight /></button>}
 
     <nav className="account-actions" aria-label="Tiện ích tài khoản">

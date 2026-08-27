@@ -2,7 +2,7 @@
 // Pass through Playwright CLI run-code --filename after opening the target origin.
 async page => {
   const target = await page.evaluate(() => location.origin);
-  if (!['http://127.0.0.1:4173','http://42.96.15.215'].includes(target)) throw new Error('Unexpected target');
+  if (!['http://127.0.0.1:4173','http://127.0.0.1:4174','http://42.96.15.215','https://42.96.15.215'].includes(target)) throw new Error('Unexpected target');
   const responses = [];
   const pageErrors = [];
   page.on('pageerror', error => pageErrors.push(error.message));

@@ -27,6 +27,7 @@ interface FeaturePageProps {
   onShowAlertsOnMap: () => void;
   selectedPosition: { latitude: number; longitude: number } | null;
   areaCode: string | null;
+  areaName: string | null;
   isAuthenticated: boolean;
   onRequireLogin: (action: string) => void;
   citizenSession: CitizenSession | null;
@@ -52,7 +53,7 @@ const alertCategoryLabels: Record<PublicAlert['category'], string> = {
   security: 'An ninh', traffic: 'Giao thông', fire_rescue: 'PCCC/CNCH', weather: 'Thời tiết', other: 'Khác',
 };
 
-export function FeaturePage({ feature, onBack, onShowAlertsOnMap, selectedPosition, areaCode, isAuthenticated, onRequireLogin, citizenSession, onCitizenLogout, onNavigate, onStartTour }: FeaturePageProps) {
+export function FeaturePage({ feature, onBack, onShowAlertsOnMap, selectedPosition, areaCode, areaName, isAuthenticated, onRequireLogin, citizenSession, onCitizenLogout, onNavigate, onStartTour }: FeaturePageProps) {
   const headingRef = useRef<HTMLHeadingElement | null>(null);
   const [feedbackNotice, setFeedbackNotice] = useState('');
   const [assistantNotice, setAssistantNotice] = useState('');
@@ -134,7 +135,7 @@ export function FeaturePage({ feature, onBack, onShowAlertsOnMap, selectedPositi
           <section className="feature-section" aria-labelledby="alerts-title">
             <div className="section-title-row">
               <div>
-                <h2 id="alerts-title">Cảnh báo quanh Xuân Hương</h2>
+                <h2 id="alerts-title">Cảnh báo {areaName ? `tại ${areaName}` : 'theo địa bàn'}</h2>
                 <p>Dữ liệu do cán bộ trực ban phát hành trong phạm vi địa bàn.</p>
               </div>
               <button className="secondary-action" type="button" onClick={onShowAlertsOnMap}>
@@ -174,7 +175,7 @@ export function FeaturePage({ feature, onBack, onShowAlertsOnMap, selectedPositi
             : <CitizenFeatureAuthGate feature="sos" onLogin={() => onRequireLogin('sử dụng SOS')} />
         )}
 
-        {feature === 'account' && <CitizenAccountPage session={citizenSession} onLogin={() => onRequireLogin('xem tài khoản')} onLogout={onCitizenLogout} onNavigate={onNavigate} onStartTour={onStartTour} />}
+        {feature === 'account' && <CitizenAccountPage session={citizenSession} areaName={areaName} onLogin={() => onRequireLogin('xem tài khoản')} onLogout={onCitizenLogout} onNavigate={onNavigate} onStartTour={onStartTour} />}
 
         {feature === 'feedback' && (
           <section className="feature-section form-section" aria-labelledby="feedback-title">

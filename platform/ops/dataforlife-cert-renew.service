@@ -1,0 +1,8 @@
+[Unit]
+Description=Renew DataForLife short-lived IP certificate
+After=network-online.target nginx.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/dataforlife/certbot-venv/bin/certbot renew --non-interactive --cert-name dataforlife-ip --config-dir /etc/dataforlife/acme --work-dir /var/lib/dataforlife-acme --logs-dir /var/log/dataforlife-acme --deploy-hook /usr/local/sbin/dataforlife-cert-reload

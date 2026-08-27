@@ -14,7 +14,7 @@ from urllib.parse import urlsplit
 from playwright.sync_api import sync_playwright, expect
 
 ROOT = Path(__file__).resolve().parents[3]
-PREVIEW = 'http://127.0.0.1:4173'
+PREVIEW = os.environ.get('QA_PREVIEW_URL', 'http://127.0.0.1:4173')
 HTTP = 'http://dataforlife.test'
 FEATURES = ['directory', 'reports', 'sos', 'account', 'alerts', 'feedback', 'assistant']
 SIZES = [(375, 812), (762, 698), (1440, 900)]
@@ -33,7 +33,9 @@ def credentials():
 def local_session(pw, role):
     api = pw.request.new_context(base_url=PREVIEW)
     try:
-        assert api.get('/api/health').json()['dataSource'] == 'fixture', 'LOCAL fixture API required'
+        assert urlsplit(PREVIEW).hostname in ['127.0.0.1', 'localhost'], 'Loopback preview required'
+        health = api.get('/api/health').json()
+        assert health['dataSource'] == 'fixture' or health.get('releaseValidation') is True, 'Isolated QA API required; production writes forbidden'
         env = credentials()
         response = api.post(f'/api/v1/auth/{role}/login', data={
             'username': env[f'API_{role.upper()}_USERNAME'],
@@ -65,7 +67,8 @@ def context_for(browser, origin, cookies=()):
 
 def enter(page, origin, feature, role):
     page.goto(f'{origin}/?feature={feature}')
-    page.wait_for_load_state('networkidle')
+    # External map tiles may keep loading; wait for the application surface,
+    # not global network idleness (the map check separately verifies rendering).
     if role == 'guest':
         page.locator('.login-role-card.citizen').click()
     page.locator('.app-shell').wait_for()

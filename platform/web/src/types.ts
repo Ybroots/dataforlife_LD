@@ -22,6 +22,12 @@ export interface Hotline {
   phone: string;
 }
 
+export interface PublicUnitContact extends DirectoryEntry {
+  unitCode: string;
+  unitName: string;
+  address: string | null;
+}
+
 export interface Station {
   name: string;
   address: string | null;

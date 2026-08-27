@@ -1,4 +1,6 @@
-# Trạng thái chức năng Xuân Hương
+# Trạng thái chức năng Lâm Đồng
+
+Rà soát phát hành 28/08/2026: tra cứu công khai phủ đủ **124 địa bàn / 124 ranh giới** từ nguồn gốc, 276 liên hệ địa bàn + 20 liên hệ phòng nghiệp vụ/đồn KCN, 34 hotline. Phạm vi dữ liệu công khai toàn tỉnh không đồng nghĩa đã có cán bộ trực ban cho mọi địa bàn; tài khoản và phân công nghiệp vụ vẫn là pilot Xuân Hương. Chi tiết kiểm thử tại `release-20260828.md`.
 
 Quy ước:
 
@@ -12,14 +14,14 @@ Phạm vi pilot Xuân Hương hiện dùng mô hình một cấp: người dân 
 
 | Mã | Trạng thái | Phạm vi hiện tại |
 |---|---|---|
-| FR-CD-01 | Hoạt động | Bản đồ Xuân Hương, GPS, tìm địa chỉ/địa điểm/CSKV |
-| FR-CD-02 | Hoạt động | Tra cứu địa bàn, đầu mối công khai, trụ sở, gọi điện/chỉ đường |
+| FR-CD-01 | Hoạt động | Bản đồ, ranh giới 124 địa bàn, tìm tên/mã địa bàn và tra cứu bằng tọa độ; GPS cần HTTPS và quyền thiết bị |
+| FR-CD-02 | Hoạt động | Đủ 296 liên hệ công khai, trụ sở, phòng nghiệp vụ/đồn KCN và 34 hotline; không tự tạo tọa độ trụ sở |
 | FR-CD-03 | Hoạt động | Cảnh báo đang hiệu lực do cổng CSKV phát hành |
 | FR-CD-04 | Hoạt động local | Có phiên đăng nhập số điện thoại/mật khẩu mang nhãn mô phỏng; tích hợp và xác thực VNeID thật đang phát triển |
 | FR-CD-05 | Hoạt động | Phản ánh có bản đồ chọn vị trí, ảnh hoặc video, kiểm tra đầu vào và yêu cầu đăng nhập ngay trước khi gửi |
 | FR-CD-06 | Đang phát triển | Chờ AI đa phương thức và cơ chế người dân duyệt trước khi gửi |
 | FR-CD-07 | Hoạt động | Timeline, cán bộ phụ trách, trao đổi và bổ sung media |
-| FR-CD-08 | Hoạt động local | SOS chỉ nổi cạnh Trợ lý AI trên bản đồ; trang khẩn cấp yêu cầu phiên VNeID mô phỏng, giữ nút tròn đủ 3 giây để gửi đúng một lần, có bản đồ vị trí, mã tiếp nhận và luồng trực ban; VNeID/112/113 thật chưa kết nối |
+| FR-CD-08 | Hoạt động nội bộ pilot | SOS trên bản đồ; trang khẩn cấp không có gọi nhanh, yêu cầu phiên người dân mô phỏng, giữ đủ 3 giây để gửi đúng một lần, có bản đồ vị trí, mã tiếp nhận và luồng trực ban; VNeID/112/113 thật chưa kết nối |
 | FR-CD-09 | Đang phát triển | Chờ AI và kho tri thức đã phê duyệt |
 | FR-CD-10 | Hoạt động local | Thông báo trong cổng cán bộ; SMS/Web Push đang phát triển |
 | FR-CD-11 | Hoạt động | Chỉ chọn được phản ánh đã xử lý/đóng để đánh giá 1–5 sao; điểm và góp ý hiển thị trong chi tiết hồ sơ của cán bộ |

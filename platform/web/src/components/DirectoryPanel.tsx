@@ -1,5 +1,6 @@
 import { Building2, ChevronDown, MapPin, Navigation, Phone, PhoneForwarded, UserRoundCheck } from 'lucide-react';
 import type { AreaLookup, Hotline } from '../types';
+import { UnitDirectory } from './UnitDirectory';
 
 interface DirectoryPanelProps {
   area: AreaLookup;
@@ -109,6 +110,7 @@ export function DirectoryPanel({ area, isFixture, hotlines }: DirectoryPanelProp
         </div>
       </details>
 
+      <UnitDirectory />
       <details className="directory-section hotline-section">
         <summary>
           <span className="section-icon"><PhoneForwarded size={20} aria-hidden="true" /></span>

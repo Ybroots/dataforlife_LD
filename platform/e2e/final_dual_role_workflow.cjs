@@ -4,8 +4,8 @@ const { chromium } = require('playwright');
 const { Pool } = require('pg');
 
 const ROOT = path.resolve(__dirname, '..');
-const BASE_URL = 'http://127.0.0.1:5173/';
-const CHROME = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+const BASE_URL = process.env.QA_BASE_URL || 'http://127.0.0.1:5173/';
+const CHROME = process.env.QA_CHROME || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 const ARTIFACTS = path.join(__dirname, 'artifacts', 'final-workflow');
 
 function env() {
@@ -60,11 +60,15 @@ async function transition(page, action, note, terminal = false) {
     if (!(await publicToggle.isChecked())) await publicToggle.check();
   }
   const submit = page.locator('.transition-form button[type="submit"]');
+  const transitioned = page.waitForResponse(response => response.url().endsWith('/transitions') && response.request().method() === 'POST');
   await submit.click();
   if (terminal) {
     await page.getByText('Kiểm tra lần cuối', { exact: true }).waitFor();
     await submit.click();
   }
+  const response = await transitioned;
+  if (!response.ok()) throw new Error(`Transition ${action} failed: ${response.status()}`);
+  console.log(`PASS transition ${action}`);
   await page.waitForTimeout(250);
 }
 
@@ -89,6 +93,9 @@ async function cleanup(receipts, databaseUrl) {
 }
 
 async function main() {
+  if (!['127.0.0.1', 'localhost'].includes(new URL(BASE_URL).hostname)) throw new Error('Loopback QA only; production writes forbidden');
+  const health = await (await fetch(new URL('api/health', BASE_URL))).json();
+  if (!health.releaseValidation) throw new Error('Requires explicitly isolated release-validation database');
   fs.mkdirSync(ARTIFACTS, { recursive: true });
   const credentials = env();
   const receipts = [];
@@ -103,7 +110,7 @@ async function main() {
 
     await citizen.waitForSelector('.citizen-tour');
     for (let index = 0; index < 5; index += 1) {
-      await citizen.getByRole('button', { name: /Tiếp theo/ }).click();
+      await citizen.getByRole('button', { name: /Tiếp theo|Bắt đầu khám phá/ }).click();
       await citizen.waitForTimeout(100);
     }
     await citizen.screenshot({ path: path.join(ARTIFACTS, '01-citizen-tour-account-highlight.png') });
@@ -211,7 +218,8 @@ async function main() {
     await officerContext.close(); await citizenContext.close();
   } finally {
     await browser.close();
-    await cleanup(receipts, credentials.DATABASE_URL);
+    // Keep evidence in the isolated release DB. Never run cleanup on a DB URL
+    // loaded from the developer environment (which may point to production).
   }
 }
 

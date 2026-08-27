@@ -30,6 +30,7 @@ interface AppOptions {
   allowTestAuthHeaders?: boolean;
   citizenSessionSecret?: string;
   citizenCredentials?: readonly CitizenCredential[];
+  releaseValidation?: boolean;
 }
 
 const incidentCategories = new Set(['security', 'traffic', 'public_order', 'administrative', 'environment', 'other']);
@@ -145,7 +146,8 @@ export async function buildApp(
     await repository.close();
   });
 
-  app.get('/health', async () => ({ status: 'ok', dataSource: repository.sourceName }));
+  app.get('/health', async () => ({ status: 'ok', dataSource: repository.sourceName,
+    ...(options.releaseValidation ? { releaseValidation: true } : {}) }));
 
   app.get<{ Querystring: { query?: string; limit?: string } }>('/v1/areas', async (request) => {
     const query = request.query.query?.trim() ?? '';
@@ -180,6 +182,7 @@ export async function buildApp(
   });
 
   app.get('/v1/hotlines', async () => ({ data: await repository.listHotlines() }));
+  app.get('/v1/directory/units', async () => ({ data: await repository.listUnitContacts() }));
 
   app.get<{ Querystring: { areaCode?: string } }>('/v1/public/alerts', async (request, reply) => {
     const areaCode = text(request.query.areaCode, 3, 80);

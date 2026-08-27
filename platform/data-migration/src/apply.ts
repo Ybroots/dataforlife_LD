@@ -1,12 +1,14 @@
 import { Client } from 'pg';
 import type { CanonicalPlan } from './types.js';
 
-export async function applyCanonicalPlan(databaseUrl: string, plan: CanonicalPlan): Promise<void> {
+export async function applyCanonicalPlan(databaseUrl: string, plan: CanonicalPlan, options: { retireFixtures?: boolean } = {}): Promise<void> {
   const client = new Client({ connectionString: databaseUrl });
   await client.connect();
 
   try {
     await client.query('BEGIN');
+    await client.query("SET LOCAL lock_timeout = '10s'");
+    await client.query("SET LOCAL statement_timeout = '60s'");
     const localityIds = new Map<string, string>();
     const unitIds = new Map<string, string>();
 
@@ -21,7 +23,7 @@ export async function applyCanonicalPlan(databaseUrl: string, plan: CanonicalPla
            province_code=EXCLUDED.province_code, province_name=EXCLUDED.province_name,
            population=EXCLUDED.population, area_km2=EXCLUDED.area_km2,
            density_per_km2=EXCLUDED.density_per_km2, merger_note=EXCLUDED.merger_note,
-           visibility=EXCLUDED.visibility, source_id=EXCLUDED.source_id,
+           visibility=EXCLUDED.visibility, source_system=EXCLUDED.source_system, source_id=EXCLUDED.source_id,
            raw_source=EXCLUDED.raw_source, updated_at=now()
          RETURNING id`,
         [item.code, item.name, item.localityType, item.level, item.provinceCode, item.provinceName,
@@ -39,7 +41,7 @@ export async function applyCanonicalPlan(databaseUrl: string, plan: CanonicalPla
          VALUES ($1, ST_Multi(ST_CollectionExtract(ST_MakeValid(ST_SetSRID(ST_GeomFromGeoJSON($2),4326)),3)),
                  'geojson', $3, $4)
          ON CONFLICT (locality_id) DO UPDATE SET
-           geom=EXCLUDED.geom, source_id=EXCLUDED.source_id,
+           geom=EXCLUDED.geom, source_system=EXCLUDED.source_system, source_id=EXCLUDED.source_id,
            vertex_count=EXCLUDED.vertex_count, updated_at=now()`,
         [localityId, JSON.stringify(item.geometry), item.sourceId, item.vertexCount],
       );
@@ -55,7 +57,7 @@ export async function applyCanonicalPlan(databaseUrl: string, plan: CanonicalPla
          ON CONFLICT (code) DO UPDATE SET
            name=EXCLUDED.name, unit_type=EXCLUDED.unit_type, level=EXCLUDED.level,
            locality_id=EXCLUDED.locality_id, visibility=EXCLUDED.visibility,
-           source_id=EXCLUDED.source_id, provenance_status=EXCLUDED.provenance_status,
+           source_system=EXCLUDED.source_system, source_id=EXCLUDED.source_id, provenance_status=EXCLUDED.provenance_status,
            raw_source=EXCLUDED.raw_source, updated_at=now()
          RETURNING id`,
         [item.code, item.name, item.unitType, item.level, localityId, item.visibility,
@@ -73,7 +75,7 @@ export async function applyCanonicalPlan(databaseUrl: string, plan: CanonicalPla
          VALUES ($1,$2,$3,'address_only',$4,'firestore',$5,$6::jsonb)
          ON CONFLICT (unit_id) DO UPDATE SET
            name=EXCLUDED.name, address=EXCLUDED.address, visibility=EXCLUDED.visibility,
-           source_id=EXCLUDED.source_id, raw_source=EXCLUDED.raw_source, updated_at=now()`,
+           source_system=EXCLUDED.source_system, source_id=EXCLUDED.source_id, raw_source=EXCLUDED.raw_source, updated_at=now()`,
         [unitId, item.name, item.address, item.visibility, item.sourceId, JSON.stringify(item.rawSource)],
       );
     }
@@ -122,6 +124,23 @@ export async function applyCanonicalPlan(databaseUrl: string, plan: CanonicalPla
         [item.categoryCode, item.label, item.phone, item.phoneNormalized, item.visibility,
           item.sourceId, JSON.stringify(item.rawSource)],
       );
+    }
+
+    if (options.retireFixtures) {
+      // Preserve demo rows and their foreign keys/history, but remove them from
+      // public lookup. A demo rectangle must never beat a real GIS boundary.
+      if (plan.localities.length !== 124 || plan.boundaries.length !== 124) throw new Error('Full source coverage required before retiring fixtures');
+      const result = await client.query<{ total: string; invalid: string }>(
+        `SELECT count(*)::text AS total,
+                count(*) FILTER (WHERE NOT ST_IsValid(b.geom) OR ST_IsEmpty(b.geom))::text AS invalid
+         FROM boundaries b JOIN localities l ON l.id=b.locality_id WHERE l.code=ANY($1::text[])`,
+        [plan.localities.map(item => item.code)],
+      );
+      if (result.rows[0]?.total !== '124' || result.rows[0]?.invalid !== '0') throw new Error('Imported GIS coverage invalid');
+      for (const table of ['localities', 'police_units', 'stations', 'directory_entries', 'hotlines']) {
+        await client.query(`UPDATE ${table} SET visibility='internal', updated_at=now() WHERE source_system='fixture' AND visibility='public'`);
+      }
+      await client.query("UPDATE hotline_categories SET visibility='internal' WHERE code='DEMO'");
     }
 
     await client.query(

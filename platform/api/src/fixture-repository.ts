@@ -90,6 +90,7 @@ function publicSos(item: SosResponse): SosResponse {
 
 export class FixtureDirectoryRepository implements DirectoryRepository {
   readonly sourceName = 'fixture' as const;
+  async listUnitContacts() { return []; }
   private readonly incidents = new Map<string, IncidentResponse & { citizenId: string; clientRequestId: string }>();
   private readonly sosEvents = new Map<string, SosResponse & { citizenId: string; idempotencyKey: string }>();
   private readonly alerts: PublicAlertResponse[] = [];

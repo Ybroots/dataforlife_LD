@@ -30,6 +30,12 @@ export interface HotlineResponse {
   phone: string;
 }
 
+export interface PublicUnitContactResponse extends DirectoryEntryResponse {
+  unitCode: string;
+  unitName: string;
+  address: string | null;
+}
+
 export interface ServiceAreaResponse {
   code: string;
   name: string;
@@ -336,6 +342,7 @@ export interface DirectoryRepository {
   lookupByCode(code: string): Promise<AreaLookupResponse | null>;
   lookupByLocation(latitude: number, longitude: number): Promise<AreaLookupResponse | null>;
   listHotlines(): Promise<HotlineResponse[]>;
+  listUnitContacts(): Promise<PublicUnitContactResponse[]>;
   listPublicAlerts(areaCode: string): Promise<PublicAlertResponse[]>;
   createIncident(citizenId: string, input: CreateIncidentInput): Promise<IncidentResponse>;
   listCitizenIncidents(citizenId: string): Promise<IncidentResponse[]>;

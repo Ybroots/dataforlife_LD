@@ -36,6 +36,7 @@ const app = await buildApp(repository, {
     displayName: process.env.API_CITIZEN_DISPLAY_NAME || 'Người dân Xuân Hương',
   }],
   secureCookies: process.env.NODE_ENV === 'production',
+  releaseValidation: process.env.API_RELEASE_VALIDATION === 'true' && process.env.NODE_ENV !== 'production',
 });
 
 const host = process.env.API_HOST || '127.0.0.1';

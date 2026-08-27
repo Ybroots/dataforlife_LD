@@ -1,5 +1,4 @@
-import { DEMO_ALERTS } from './features';
-import type { AreaLookup, ServiceArea } from './types';
+import type { AreaLookup, PublicAlert, ServiceArea } from './types';
 
 export interface CitizenMapPoint {
   id: string;
@@ -73,14 +72,18 @@ export function buildCitizenMapPoints(area: AreaLookup | null): CitizenMapPoint[
       phone: contact?.phone ?? null, ...position, demo: true,
     });
   });
-  for (const alert of DEMO_ALERTS) {
-    const zone = area.serviceAreas.find((candidate) => pointInBoundary(alert.longitude, alert.latitude, candidate.boundary));
-    if (zone) points.push({
-      id: `alert:${alert.id}`, kind: 'alert', serviceAreaCode: zone.code, name: alert.title,
-      detail: alert.summary, phone: null, latitude: alert.latitude, longitude: alert.longitude, demo: true,
-    });
-  }
   return points;
+}
+
+export function buildPublicAlertPoints(area: AreaLookup | null, alerts: PublicAlert[]): CitizenMapPoint[] {
+  if (!area) return [];
+  return alerts.flatMap((alert) => {
+    if (alert.areaCode !== area.code || alert.latitude === null || alert.longitude === null) return [];
+    const zone = area.serviceAreas.find(candidate => pointInBoundary(alert.longitude!, alert.latitude!, candidate.boundary));
+    return [{ id: `alert:${alert.id}`, kind: 'alert' as const, serviceAreaCode: zone?.code ?? area.code,
+      name: alert.title, detail: alert.summary, phone: null,
+      latitude: alert.latitude, longitude: alert.longitude, demo: false }];
+  });
 }
 
 export function pointsWithinZone(points: CitizenMapPoint[], zone: ServiceArea): CitizenMapPoint[] {

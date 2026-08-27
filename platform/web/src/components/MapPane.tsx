@@ -4,9 +4,10 @@ import { Building2, ChevronRight, CircleDotDashed, Info, Layers3, LoaderCircle, 
 import * as maplibregl from '../maplibre-runtime';
 import type { GeoJSONSource, Map as MapLibreMap, MapMouseEvent } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { buildCitizenMapPoints, pointsWithinZone, type CitizenMapPoint } from '../citizen-map-points';
+import { buildCitizenMapPoints, buildPublicAlertPoints, pointsWithinZone, type CitizenMapPoint } from '../citizen-map-points';
+import { listPublicAlerts } from '../api';
 import { createPublicMapStyle } from '../map-style';
-import type { AreaLookup, Hotline } from '../types';
+import type { AreaLookup, Hotline, PublicAlert } from '../types';
 
 interface MapPaneProps {
   area: AreaLookup | null;
@@ -105,8 +106,19 @@ export function MapPane({ area, selectedPosition, onCoordinateSelect, showDemoAl
   const [selectedServiceAreaCode, setSelectedServiceAreaCode] = useState<string | null>(null);
   const [activePointId, setActivePointId] = useState<string | null>(null);
   const pointPopupsRef = useRef(new Map<string, maplibregl.Popup>());
+  const [publicAlerts, setPublicAlerts] = useState<PublicAlert[]>([]);
+  const [alertsFailed, setAlertsFailed] = useState(false);
 
-  const mapPoints = useMemo(() => buildCitizenMapPoints(area), [area]);
+  const mapPoints = useMemo(() => [...buildCitizenMapPoints(area), ...buildPublicAlertPoints(area, publicAlerts)], [area, publicAlerts]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setPublicAlerts([]); setAlertsFailed(false);
+    if (!area?.code) return;
+    void listPublicAlerts(area.code).then(alerts => { if (!cancelled) setPublicAlerts(alerts); })
+      .catch(() => { if (!cancelled) setAlertsFailed(true); });
+    return () => { cancelled = true; };
+  }, [area?.code]);
 
   const selectedServiceArea = area?.serviceAreas.find((serviceArea) => serviceArea.code === selectedServiceAreaCode) ?? null;
   const selectedAreaPoints = (selectedServiceArea ? pointsWithinZone(mapPoints, selectedServiceArea) : []).filter((point) => (
@@ -571,13 +583,13 @@ export function MapPane({ area, selectedPosition, onCoordinateSelect, showDemoAl
       markerElement.dataset.mapPointId = point.id;
       markerElement.dataset.serviceAreaCode = point.serviceAreaCode;
       markerElement.textContent = '!';
-      markerElement.setAttribute('aria-label', `${point.name}. Cảnh báo minh họa.`);
+      markerElement.setAttribute('aria-label', `${point.name}. Cảnh báo địa bàn.`);
       const content = document.createElement('div');
       content.className = 'alert-popup';
       const title = document.createElement('strong');
       title.textContent = point.name;
       const demo = document.createElement('span');
-      demo.textContent = 'Cảnh báo minh họa';
+      demo.textContent = 'Cảnh báo công khai đang hiệu lực';
       const detail = document.createElement('p');
       detail.textContent = point.detail;
       content.append(title, demo, detail);
@@ -663,9 +675,9 @@ export function MapPane({ area, selectedPosition, onCoordinateSelect, showDemoAl
           )}
           <label><input name="radiusVisible" type="checkbox" checked={radiusVisible} onChange={(event) => setRadiusVisible(event.target.checked)} /> <span>Bán kính tra cứu 3 km</span></label>
           {(area?.serviceAreas?.length ?? 0) > 0 && <label><input name="demoOfficersVisible" type="checkbox" checked={demoOfficersVisible} onChange={(event) => setDemoOfficersVisible(event.target.checked)} /> <span>Trụ sở và điểm CSKV demo</span></label>}
-          <label><input name="alertsVisible" type="checkbox" checked={alertsVisible} onChange={(event) => setAlertsVisible(event.target.checked)} /> <span>Cảnh báo minh họa</span></label>
+          <label><input name="alertsVisible" type="checkbox" checked={alertsVisible} onChange={(event) => setAlertsVisible(event.target.checked)} /> <span>Cảnh báo địa bàn</span></label>
           <small><CircleDotDashed size={15} aria-hidden="true" /> Chạm một khu hoặc chọn tên khu để xem các điểm bên trong.</small>
-          <small><ShieldAlert size={15} aria-hidden="true" /> Cảnh báo hiện tại không phải dữ liệu nghiệp vụ.</small>
+          <small><ShieldAlert size={15} aria-hidden="true" /> {alertsFailed ? 'Chưa tải được cảnh báo. Hãy tải lại trang để thử lại.' : 'Chỉ hiển thị cảnh báo công khai có tọa độ do cán bộ phát hành.'}</small>
           {(area?.serviceAreas?.length ?? 0) > 0 && <small><ShieldAlert size={15} aria-hidden="true" /> Tọa độ và điểm tiếp dân là demo. Riêng tên/địa chỉ trụ sở chính và số liên hệ lấy từ danh bạ công khai của phường.</small>}
           {(area?.serviceAreas?.length ?? 0) > 0 && <small>Ranh 5 phường cũ được tái dựng để tham chiếu, chưa phải ranh phân công CSKV đã phê duyệt.</small>}
         </div>

@@ -283,7 +283,12 @@ export function PolicePortal({ onSignOut, sessionActor }: PolicePortalProps) {
   }, []);
 
   useEffect(() => {
-    if (selectedItem) void loadDetail(selectedItem);
+    if (!selectedItem) return;
+    // A successful transition already returned the full, newer detail. The
+    // subsequent queue refresh must not reload it and erase the next draft.
+    if (detail?.id === selectedItem.id && detail.kind === selectedItem.kind
+      && Date.parse(detail.updatedAt) >= Date.parse(selectedItem.updatedAt)) return;
+    void loadDetail(selectedItem);
   }, [selectedItem?.id, selectedItem?.kind, selectedItem?.updatedAt]);
 
   useEffect(() => {

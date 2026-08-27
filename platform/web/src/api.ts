@@ -7,6 +7,7 @@ import type {
   IncidentMessage,
   IncidentStatus,
   Hotline,
+  PublicUnitContact,
   LookupEnvelope,
   OfficerNotification,
   OfficerStatistics,
@@ -25,6 +26,10 @@ import type {
 } from './types';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
+
+export async function listUnitContacts(): Promise<PublicUnitContact[]> {
+  return (await request<{ data: PublicUnitContact[] }>('/v1/directory/units')).data;
+}
 
 export async function listCitizenNotifications(options: { cursor?: string; unreadOnly?: boolean; signal?: AbortSignal } = {}): Promise<CitizenNotificationPage> {
   const params = new URLSearchParams({ limit: '30', unread: options.unreadOnly ? '1' : '0' });

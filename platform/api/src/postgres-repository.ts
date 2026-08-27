@@ -11,6 +11,7 @@ import type {
   DirectoryEntryResponse,
   DirectoryRepository,
   HotlineResponse,
+  PublicUnitContactResponse,
   IncidentAttachmentInput,
   IncidentAttachmentResponse,
   IncidentMessageResponse,
@@ -136,6 +137,19 @@ export class PostgresDirectoryRepository implements DirectoryRepository {
       label: row.label,
       phone: row.phone,
     }));
+  }
+
+  async listUnitContacts(): Promise<PublicUnitContactResponse[]> {
+    const result = await this.pool.query<PublicUnitContactResponse>(
+      `SELECT d.id::text, d.display_name AS "displayName", d.rank,
+              d.role_title AS "roleTitle", d.phone, d.entry_type AS "entryType",
+              u.code AS "unitCode", u.name AS "unitName", s.address
+       FROM directory_entries d JOIN police_units u ON u.id = d.unit_id
+       LEFT JOIN stations s ON s.unit_id = u.id AND s.visibility = 'public'
+       WHERE d.locality_id IS NULL AND d.visibility = 'public' AND u.visibility = 'public'
+       ORDER BY u.name, d.display_name, d.id`,
+    );
+    return result.rows;
   }
 
   listPublicAlerts(areaCode: string): Promise<PublicAlertResponse[]> {
@@ -347,8 +361,7 @@ export class PostgresDirectoryRepository implements DirectoryRepository {
          FROM directory_entries d
          JOIN localities l ON l.id = d.locality_id
          WHERE l.code = $1 AND d.visibility = 'public'
-         ORDER BY CASE WHEN d.entry_type = 'unit_contact' THEN 0 ELSE 1 END, d.created_at
-         LIMIT 1`,
+         ORDER BY CASE WHEN d.entry_type = 'unit_contact' THEN 0 ELSE 1 END, d.display_name, d.id`,
         [row.code],
       ),
       this.pool.query<{
@@ -423,9 +436,9 @@ export class PostgresDirectoryRepository implements DirectoryRepository {
       } : null,
       directory: directoryResult.rows.map((entry) => ({
         id: entry.id,
-        displayName: entry.entry_type === 'unit_contact' ? 'Đầu mối trực địa bàn' : 'Cảnh sát khu vực phụ trách',
-        rank: null,
-        roleTitle: entry.entry_type === 'unit_contact' ? 'Tiếp nhận thông tin công khai' : 'Liên hệ theo địa bàn',
+        displayName: entry.display_name,
+        rank: entry.rank,
+        roleTitle: entry.role_title,
         phone: entry.phone,
         entryType: entry.entry_type,
       })),
