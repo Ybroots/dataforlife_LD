@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, FileWarning, LocateFixed, MapPinned, Siren } from 'lucide-react';
-import * as maplibregl from 'maplibre-gl';
+import * as maplibregl from '../maplibre-runtime';
 import type { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { getOfficerIncident, getOfficerSos, listOperationalMapPoints, lookupByCode } from '../api';

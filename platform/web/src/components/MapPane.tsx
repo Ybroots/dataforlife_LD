@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { Building2, ChevronRight, CircleDotDashed, Info, Layers3, LoaderCircle, LocateFixed, MapPin, Phone, Shield, ShieldAlert, Siren, TriangleAlert, X } from 'lucide-react';
-import * as maplibregl from 'maplibre-gl';
+import * as maplibregl from '../maplibre-runtime';
 import type { GeoJSONSource, Map as MapLibreMap, MapMouseEvent } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { buildCitizenMapPoints, pointsWithinZone, type CitizenMapPoint } from '../citizen-map-points';
@@ -197,7 +197,13 @@ export function MapPane({ area, selectedPosition, onCoordinateSelect, showDemoAl
       attributionControl: false,
       style: createPublicMapStyle(),
     });
+    // A worker or tile request can stall without a MapLibre error event.
+    // Do not silently leave a blank canvas behind otherwise working markers.
+    const loadTimeout = window.setTimeout(() => setTileWarning(true), 12000);
     map.on('load', () => {
+      window.clearTimeout(loadTimeout);
+      setTileWarning(false);
+      containerRef.current?.setAttribute('data-map-loaded', 'true');
       map.addSource(SOURCE_ID, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
       map.addSource(SERVICE_AREA_SOURCE_ID, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
       map.addSource(RADIUS_SOURCE_ID, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
@@ -260,7 +266,7 @@ export function MapPane({ area, selectedPosition, onCoordinateSelect, showDemoAl
       map.on('mouseleave', SERVICE_AREA_FILL_LAYER_ID, () => { map.getCanvas().style.cursor = ''; });
     });
     map.on('error', (event) => {
-      if (String(event.error?.message ?? event.error).includes('/planet/')) {
+      if (('sourceId' in event && event.sourceId === 'openmaptiles') || String(event.error?.message ?? event.error).includes('openfreemap')) {
         setTileWarning(true);
       }
     });
@@ -282,6 +288,7 @@ export function MapPane({ area, selectedPosition, onCoordinateSelect, showDemoAl
     mapRef.current = map;
 
     return () => {
+      window.clearTimeout(loadTimeout);
       markerRef.current?.remove();
       for (const marker of alertMarkersRef.current) marker.remove();
       for (const marker of demoOfficerMarkersRef.current) marker.remove();
@@ -743,7 +750,7 @@ export function MapPane({ area, selectedPosition, onCoordinateSelect, showDemoAl
         </button>
       </div>
       {locationError && <div className="map-location-error" role="alert"><span>{locationError}</span><button type="button" onClick={() => setLocationError('')} aria-label="Đóng thông báo vị trí"><X size={18} aria-hidden="true" /></button></div>}
-      {tileWarning && <div className="map-network-warning" role="status">Nền bản đồ chưa tải; ranh giới GIS vẫn sử dụng được.</div>}
+      {tileWarning && <div className="map-network-warning" role="status"><span>Nền bản đồ tải chậm hoặc bị gián đoạn.</span><button type="button" onClick={() => window.location.reload()}>Tải lại bản đồ</button></div>}
       {!selectedPosition && !selectedServiceArea && <div className="map-hint">Chạm một khu vực để xem các điểm bên trong</div>}
     </section>
   );

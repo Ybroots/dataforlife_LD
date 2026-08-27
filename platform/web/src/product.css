@@ -30,21 +30,21 @@ input, textarea, select { accent-color: var(--color-primary); }
 .feature-page { max-width: 960px; }
 .eyebrow, .panel-intro .eyebrow { color: var(--color-muted); letter-spacing: .04em; }
 
-/* Quiet institutional header. Secondary actions live in the feature menu. */
-.topbar, .police-topbar { color: var(--color-ink); background: var(--color-surface); border-bottom: 1px solid var(--color-line); box-shadow: none; gap: 12px; }
+/* Original red identity, with the refined spacing and restrained controls. */
+.topbar, .police-topbar { color: #fff; background: var(--color-primary); border-bottom: 1px solid var(--color-primary-deep); box-shadow: none; gap: 12px; }
 .topbar { padding-inline: 20px; }
 .brand-mark { width: 36px; height: 36px; flex-basis: 36px; border: 0; border-radius: 6px; box-shadow: none; }
 .brand-copy strong { font-size: 15px; font-weight: 600; letter-spacing: 0; }
-.brand-copy span { color: var(--color-muted); font-size: 12px; }
-.brand-copy .brand-title-full, .brand-copy .brand-title-compact { font: inherit; color: inherit; }
+.brand-copy span { color: #fff; font-size: 12px; }
+.brand-copy .brand-title-full, .brand-copy .brand-title-compact { display: inline; font: inherit; color: inherit; }
 .brand-copy .brand-title-compact { display: none; }
 .topbar-actions { gap: 8px; }
 .topbar :is(.feature-menu-button, .citizen-session-button, .citizen-login-trigger, .citizen-notification-bell),
-.topbar-icon-btn, .topbar-icon-btn.logout { color: var(--color-primary); background: #fff; border: 1px solid var(--color-line); border-radius: var(--radius-control); box-shadow: none; min-height: 44px; }
+.topbar-icon-btn, .topbar-icon-btn.logout { color: #fff; background: transparent; border: 1px solid rgba(255,255,255,.55); border-radius: var(--radius-control); box-shadow: none; min-height: 44px; }
 .topbar :is(.feature-menu-button, .citizen-session-button, .citizen-login-trigger, .citizen-notification-bell):hover,
-.topbar-icon-btn:hover, .topbar-icon-btn[aria-pressed="true"] { background: var(--color-primary-soft); border-color: #a9bbc4; }
-.topbar .citizen-notification-bell:focus-visible { outline-color: var(--color-primary); }
-.police-brand { color: var(--color-ink); }
+.topbar-icon-btn:hover, .topbar-icon-btn[aria-pressed="true"] { background: var(--color-primary-deep); border-color: #fff; }
+.topbar button:focus-visible, .police-topbar button:focus-visible { outline-color: #fff; }
+.police-brand { color: #fff; }
 .police-brand img { box-shadow: none; border: 0; }
 .police-brand strong { font-size: 15px; font-weight: 600; }
 .notification-button > span, .citizen-notification-count { background: var(--color-primary); color: #fff; border-color: #fff; font-size: 11px; }
@@ -116,18 +116,19 @@ input, textarea, select { accent-color: var(--color-primary); }
 /* Geographic labels need their own compact scale, separate from form typography. */
 .cskv-demo-marker, .station-demo-marker { filter: none; }
 .cskv-demo-marker { width: 48px; height: 56px; }
-.cskv-demo-marker-badge { width: 48px; height: 48px; border: 2px solid #fff; background: var(--color-primary); box-shadow: none; }
-.cskv-demo-marker::after { left: 19px; }
+.cskv-demo-marker-badge { width: 48px; height: 48px; border: 2px solid #fff; background: var(--color-map); box-shadow: none; }
+.cskv-demo-marker::after { left: 19px; background: var(--color-map); }
 .cskv-demo-marker-badge strong, .station-demo-marker strong { font-size: 12px; line-height: 1.2; letter-spacing: 0; white-space: nowrap; }
 .cskv-demo-marker-badge small, .station-demo-marker small { font-size: 11px; line-height: 1.2; letter-spacing: 0; color: #fff; white-space: nowrap; }
-.cskv-demo-marker:hover .cskv-demo-marker-badge, .cskv-demo-marker:focus-visible .cskv-demo-marker-badge { background: var(--color-primary-deep); box-shadow: none; }
+.cskv-demo-marker:hover .cskv-demo-marker-badge, .cskv-demo-marker:focus-visible .cskv-demo-marker-badge { background: var(--color-map-deep); box-shadow: none; }
 .station-demo-marker { width: 56px; height: 52px; }
 .station-demo-marker > span { width: 56px; height: 44px; border: 2px solid #fff; border-radius: 6px; }
 .station-demo-marker::after { left: 23px; }
 .map-hint { display: none; }
 .map-location-error { position: absolute; z-index: 12; bottom: 80px; right: 16px; max-width: min(360px,calc(100% - 32px)); display: flex; align-items: center; padding: 12px; gap: 8px; background: #fff; border: 1px solid var(--color-line); border-left: 3px solid var(--color-danger); border-radius: 6px; font-size: 14px; }
 .map-location-error button { min-width: 44px; height: 44px; border: 0; background: none; color: var(--color-muted); }
-.map-network-warning { top: 80px; right: 16px; background: #fff; color: var(--color-muted); border-color: var(--color-line); }
+.map-network-warning { top: 80px; right: 16px; max-width: min(340px,calc(100% - 32px)); display: flex; flex-wrap: wrap; align-items: center; gap: 8px; background: #fff; color: var(--color-muted); border-color: var(--color-line); }
+.map-network-warning button { min-height: 44px; padding: 8px 12px; color: var(--color-primary); background: #fff; border: 1px solid var(--color-line); border-radius: 6px; }
 
 /* Menu is a simple list, not a stack of cards. */
 .feature-drawer { display: flex; flex-direction: column; gap: 0; background: #fff; }

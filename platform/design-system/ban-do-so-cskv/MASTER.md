@@ -15,9 +15,10 @@ Page-specific rules may refine these defaults but must not reintroduce decorativ
 
 | Role | Token | Value |
 | --- | --- | --- |
-| Primary / spatial actions | `--color-primary` | `#24566a` |
-| Primary pressed | `--color-primary-deep` | `#193e4d` |
-| Selected background | `--color-primary-soft` | `#edf3f5` |
+| Original institutional red | `--color-primary` | `#d71935` |
+| Primary pressed | `--color-primary-deep` | `#8e1426` |
+| Selected background | `--color-primary-soft` | `#fff0f2` |
+| Geographic controls / CSKV marker | `--color-map` | `#24566a` |
 | Body text | `--color-ink` | `#202b33` |
 | Secondary text | `--color-muted` | `#596772` |
 | Surface | `--color-surface` | `#ffffff` |
@@ -40,7 +41,9 @@ Page-specific rules may refine these defaults but must not reintroduce decorativ
 
 - Citizen map: map-dominant; Search, Location and SOS are the key actions.
   Secondary capabilities belong in the Tính năng menu or a disclosed panel.
-- White institutional header with existing official mark; no watermark background.
+- Restore the original red institutional header and active controls per the user's
+  correction. Keep the existing official mark, compact layout and neutral content;
+  do not reintroduce gradients, glass or heavy shadows.
 - Officer queue: one numerical summary rail, readable list rows and divider-separated
   details. Do not wrap each metric, fact or subsection in another card.
 - Keep authentic empty/loading/error/pilot states; never hide limitations for visual polish.

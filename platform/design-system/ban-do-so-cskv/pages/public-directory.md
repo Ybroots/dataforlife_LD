@@ -10,7 +10,7 @@ for geographic information.
 
 ## Layout
 
-- Map fills the workspace under the white header.
+- Map fills the workspace under the original red institutional header.
 - One compact search surface in the upper-left; the directory opens only when
   requested, after choosing a search result, or after a coordinate lookup.
 - Desktop directory: 340px overlay with bounded scrolling, not a permanent wide column.
@@ -27,12 +27,17 @@ for geographic information.
 
 ## Map details
 
-- Geographic zone colors communicate spatial categories only; ordinary UI uses primary blue.
+- Geographic zone colors communicate spatial categories only. The original red
+  is the UI primary; location and CSKV markers retain geographic blue.
 - A selected zone opens a bounded panel (bottom sheet on mobile), not another dashboard.
 - Directory metrics and contact sections use type, spacing and dividers instead of nested cards.
 - Keep demo/reference-boundary and public-source disclosures in the relevant detail panels.
 - Location shows progress and a recoverable, announced error when permission or GPS fails.
 - The map remains mounted behind the directory and resizes even when the directory is open.
+- All map components import `maplibre-runtime.ts`, which configures Vite's bundled
+  MapLibre 6 worker. A visible canvas or DOM marker is NOT proof that the map loaded:
+  release QA must verify worker JavaScript, vector tile responses, GIS sources and
+  an actual screenshot from the production build.
 
 ## Tour and safety
 

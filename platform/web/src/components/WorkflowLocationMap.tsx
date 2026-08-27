@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import * as maplibregl from 'maplibre-gl';
+import * as maplibregl from '../maplibre-runtime';
 import type { Map as MapLibreMap, MapMouseEvent } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { MapPinned } from 'lucide-react';
