@@ -55,3 +55,30 @@ Trước cập nhật phải sao lưu web/API/config và PostgreSQL; so SHA-256 
 16 file build với bản local đã QA. Không migration, không thay tài khoản hay dữ
 liệu nghiệp vụ. Giữ chunk cũ cho các phiên đang mở; cập nhật HTML cuối cùng.
 Thông tin release/backup và kết quả kiểm tra website thật được ghi sau triển khai.
+
+## Xác minh phát hành
+
+- Mã ứng dụng: `fb84f728a8c73cf020ad85ad2f6af66cda873623`, đã push GitHub/main
+  và triển khai tại `https://42.96.15.215/`.
+- Backup root-only: `/opt/dataforlife/backups/release-20260827T173926Z` gồm web,
+  API dist, env, nginx và PostgreSQL custom dump (đã kiểm tra danh mục phục hồi).
+- Cả 16 file build khớp SHA-256 local/VPS. Entry `index-CMkXAMhw.js`;
+  HTML SHA-256 `b8d8e1f5ea6382fcacd640948a0d0c7a68aa364a20f6fd813b982ade0da0a191`.
+- Trước deploy: **115/115** regression qua trên bản build chốt, cùng 26 unit test,
+  E2E hai vai trò, overview và full-data browser. Không lỗi JS/tràn ngang.
+- Sau deploy: đối chiếu API production **124/124** địa bàn/ranh giới, **296**
+  liên hệ và **34** hotline khớp snapshot. Không nhập lại hoặc sửa DB.
+- Trình duyệt production: overview 3 kích thước, 12 lần chọn địa bàn, chạm polygon,
+  reload, GPS, retry; thêm **21** màn hình guest HTTPS qua. Worker và vector tile
+  tải thật; kiểm tra chứng chỉ mặc định, không bỏ qua lỗi TLS.
+- Đăng nhập/session/đọc API bảo vệ/đăng xuất hai vai trò qua; cookie Secure,
+  HttpOnly, SameSite=Lax; khách bị chặn 401. Không tạo phản ánh/SOS thử trên live.
+- Số liệu trước/sau: 0 phản ánh, 0 SOS, 2 actor, không thay đổi.
+- nginx/API/timer gia hạn active; service gia hạn gần nhất `Result=success`,
+  `ExecMainStatus=0`; chứng chỉ còn hạn đến 03/09/2026 và có lịch gia hạn.
+- JSON overview nén gzip còn **333.287 byte**, so với **1.102.178 byte** gốc.
+- Tab đang mở đã tải đúng entry mới, map loaded=true và overview-count=124,
+  bộ chọn có 125 mục gồm toàn tỉnh. Không còn default riêng Xuân Hương.
+
+Khi khôi phục, dùng web/API/config từ đúng backup; không phục hồi toàn database
+đè lên dữ liệu người dùng mới. Các tích hợp và giới hạn nêu trên không thay đổi.
