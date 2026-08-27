@@ -11,9 +11,8 @@ deliberate three-second hold. The page must never turn a normal tap into a reque
 2. Large circular SOS hold control with visible progress and live status.
 3. VNeID sign-in prompt when no citizen session exists.
 4. Current-location map and GPS recovery action.
-5. Official quick-call links: 113, 114 and 115.
-6. Optional incident category, note and callback phone.
-7. Legal truthfulness notice.
+5. Optional incident category, note and callback phone.
+6. Legal truthfulness notice.
 
 The existing application header and bottom navigation remain unchanged.
 

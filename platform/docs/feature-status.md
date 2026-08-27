@@ -19,7 +19,7 @@ Phạm vi pilot Xuân Hương hiện dùng mô hình một cấp: người dân 
 | FR-CD-05 | Hoạt động | Phản ánh có bản đồ chọn vị trí, ảnh hoặc video, kiểm tra đầu vào và yêu cầu đăng nhập ngay trước khi gửi |
 | FR-CD-06 | Đang phát triển | Chờ AI đa phương thức và cơ chế người dân duyệt trước khi gửi |
 | FR-CD-07 | Hoạt động | Timeline, cán bộ phụ trách, trao đổi và bổ sung media |
-| FR-CD-08 | Hoạt động local | SOS chỉ nổi cạnh Trợ lý AI trên bản đồ; trang khẩn cấp yêu cầu phiên VNeID mô phỏng, giữ nút tròn đủ 3 giây để gửi đúng một lần, có bản đồ vị trí, gọi nhanh 113/114/115, mã tiếp nhận và luồng trực ban; VNeID/112/113 thật chưa kết nối |
+| FR-CD-08 | Hoạt động local | SOS chỉ nổi cạnh Trợ lý AI trên bản đồ; trang khẩn cấp yêu cầu phiên VNeID mô phỏng, giữ nút tròn đủ 3 giây để gửi đúng một lần, có bản đồ vị trí, mã tiếp nhận và luồng trực ban; VNeID/112/113 thật chưa kết nối |
 | FR-CD-09 | Đang phát triển | Chờ AI và kho tri thức đã phê duyệt |
 | FR-CD-10 | Hoạt động local | Thông báo trong cổng cán bộ; SMS/Web Push đang phát triển |
 | FR-CD-11 | Hoạt động | Chỉ chọn được phản ánh đã xử lý/đóng để đánh giá 1–5 sao; điểm và góp ý hiển thị trong chi tiết hồ sơ của cán bộ |

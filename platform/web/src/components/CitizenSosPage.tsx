@@ -2,13 +2,10 @@ import { CSSProperties, KeyboardEvent as ReactKeyboardEvent, PointerEvent as Rea
 import {
   AlertTriangle,
   CheckCircle2,
-  Cross,
-  Flame,
   LocateFixed,
   MapPin,
   PhoneCall,
   RefreshCw,
-  Shield,
   ShieldAlert,
   Siren,
   XCircle,
@@ -205,7 +202,7 @@ export function CitizenSosPage({ isAuthenticated, onRequireLogin }: CitizenSosPa
         setLocating(false);
       },
       () => {
-        setError('Không lấy được GPS. Bạn vẫn có thể gọi 112 hoặc 113 bằng nút phía trên.');
+        setError('Không lấy được GPS. Nếu đang gặp nguy hiểm, hãy gọi trực tiếp số khẩn cấp phù hợp trên điện thoại.');
         setLocating(false);
       },
       { enableHighAccuracy: true, timeout: 12_000, maximumAge: 30_000 },
@@ -393,15 +390,6 @@ export function CitizenSosPage({ isAuthenticated, onRequireLogin }: CitizenSosPa
               <button type="button" onClick={locate} disabled={locating} aria-label={position ? 'Cập nhật vị trí GPS hiện tại' : 'Lấy vị trí GPS hiện tại'}>
                 <LocateFixed size={17} aria-hidden="true" /> {locating ? 'Đang lấy…' : position ? 'Cập nhật' : 'Lấy vị trí'}
               </button>
-            </div>
-          </section>
-
-          <section className="sos-quick-calls" aria-labelledby="sos-quick-calls-title">
-            <h2 id="sos-quick-calls-title">Gọi nhanh</h2>
-            <div>
-              <a href="tel:113"><Shield size={21} aria-hidden="true" /><strong>113</strong><small>Công an</small></a>
-              <a href="tel:114"><Flame size={21} aria-hidden="true" /><strong>114</strong><small>PCCC</small></a>
-              <a href="tel:115"><Cross size={21} aria-hidden="true" /><strong>115</strong><small>Cấp cứu</small></a>
             </div>
           </section>
 

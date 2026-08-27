@@ -416,8 +416,8 @@ export default function App() {
               window.history.pushState({}, '', url);
               setActiveFeature(feature); setFeatureMenuOpen(false); setCaseNavigationVersion((value) => value + 1);
             }} />
-          {!citizenSession && <button className="citizen-login-trigger" type="button" onClick={() => { setCitizenLoginAction('sử dụng ứng dụng người dân'); setCitizenLoginOpen(true); }} aria-label="Đăng nhập VNeID" title="Đăng nhập VNeID"><img src={vneidLogoUrl} alt="" width="30" height="30" /></button>}
-          {citizenSession && <button className="citizen-session-button" type="button" onClick={() => navigateToFeature('account')} title="Mở tài khoản người dân"><UserRoundCheck size={17} /><span>{citizenSession.displayName}</span></button>}
+          {!citizenSession && <button className="citizen-login-trigger" data-tour="account" type="button" onClick={() => { setCitizenLoginAction('sử dụng ứng dụng người dân'); setCitizenLoginOpen(true); }} aria-label="Đăng nhập VNeID" title="Đăng nhập VNeID"><img src={vneidLogoUrl} alt="" width="30" height="30" /></button>}
+          {citizenSession && <button className="citizen-session-button" data-tour="account" type="button" onClick={() => navigateToFeature('account')} title="Mở tài khoản người dân"><UserRoundCheck size={17} /><span>{citizenSession.displayName}</span></button>}
           <button className="tour-help-button" type="button" onClick={startTour} aria-label="Hướng dẫn sử dụng" title="Hướng dẫn sử dụng"><HelpCircle size={19} /></button>
           <button className="police-portal-link" type="button" onClick={() => setPoliceLoginOpen(true)}>
             <LogIn size={18} aria-hidden="true" /><span>Đăng nhập CSKV</span>
