@@ -8,6 +8,7 @@ import { LoginScreen } from './components/LoginScreen';
 import { CitizenAuthSheet } from './components/CitizenAuthSheet';
 import { CitizenOnboardingTour } from './components/CitizenOnboardingTour';
 import { CitizenNotifications } from './components/CitizenNotifications';
+import { ScreenErrorBoundary } from './components/ScreenErrorBoundary';
 import type { FeatureId } from './features';
 import type { AreaLookup, AreaSummary, CitizenSession, Hotline, WorkflowActor } from './types';
 import directoryLogoUrl from '../../../assets/images/logo-128.png';
@@ -433,7 +434,12 @@ export default function App() {
           <aside ref={lookupPanelRef} className="lookup-panel" id="lookup-panel" aria-label="Tìm kiếm và danh bạ địa bàn">
             <div className="panel-intro">
               <h1>Danh bạ địa bàn</h1>
-              <button type="button" onClick={() => { setMobileView('map'); document.getElementById('area-search')?.focus(); }} aria-label="Thu gọn danh bạ"><X size={20} aria-hidden="true" /></button>
+              <button type="button" onClick={() => {
+                setMobileView('map');
+                // Restore focus to the trigger, not the search input: focusing
+                // an input opens the keyboard and hides mobile navigation.
+                window.requestAnimationFrame(() => document.querySelector<HTMLButtonElement>('.directory-toggle')?.focus({ preventScroll: true }));
+              }} aria-label="Thu gọn danh bạ"><X size={20} aria-hidden="true" /></button>
             </div>
 
             <div className="search-block">
@@ -516,6 +522,7 @@ export default function App() {
           )}
         </main>
       ) : (
+        <ScreenErrorBoundary key={`${activeFeature}:${caseNavigationVersion}`}>
         <Suspense fallback={<main className="feature-workspace"><div className="queue-loading"><span className="loader" /> Đang tải tính năng…</div></main>}>
           <FeaturePage
             key={caseNavigationVersion}
@@ -532,6 +539,7 @@ export default function App() {
             onStartTour={startTour}
           />
         </Suspense>
+        </ScreenErrorBoundary>
       )}
 
       <nav className="mobile-tabs" aria-label="Điều hướng chính">

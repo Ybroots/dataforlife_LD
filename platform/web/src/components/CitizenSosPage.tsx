@@ -14,6 +14,7 @@ import { ApiError, cancelCitizenSos, createSos, getCitizenSos, listCitizenSos } 
 import type { SosEvent, SosStatus } from '../types';
 import { WorkflowTimeline } from './WorkflowTimeline';
 import { VneIdLoginPrompt } from './VneIdLoginPrompt';
+import { createRequestId } from '../request-id';
 
 interface CitizenSosPageProps {
   isAuthenticated: boolean;
@@ -108,7 +109,7 @@ export function CitizenSosPage({ isAuthenticated, onRequireLogin }: CitizenSosPa
   const [cancelConfirmation, setCancelConfirmation] = useState(false);
   const [events, setEvents] = useState<SosEvent[]>([]);
   const [activeReceipt, setActiveReceipt] = useState<string | null>(() => new URL(window.location.href).searchParams.get('sosReceipt'));
-  const [idempotencyKey, setIdempotencyKey] = useState(() => initialDraft?.idempotencyKey ?? crypto.randomUUID());
+  const [idempotencyKey, setIdempotencyKey] = useState(() => initialDraft?.idempotencyKey ?? createRequestId());
   const [error, setError] = useState('');
   const [holding, setHolding] = useState(false);
   const [holdProgress, setHoldProgress] = useState(0);
@@ -329,7 +330,7 @@ export function CitizenSosPage({ isAuthenticated, onRequireLogin }: CitizenSosPa
     setNote('');
     setHoldProgress(0);
     holdCompleted.current = false;
-    setIdempotencyKey(crypto.randomUUID());
+    setIdempotencyKey(createRequestId());
     selectReceipt(null);
     window.sessionStorage.removeItem(SOS_DRAFT_KEY);
     setCancelConfirmation(false);

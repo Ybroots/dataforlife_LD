@@ -16,6 +16,7 @@ import { WorkflowTimeline } from './WorkflowTimeline';
 import { IncidentMediaGallery } from './IncidentMediaGallery';
 import { WorkflowLocationMap } from './WorkflowLocationMap';
 import { VneIdLoginPrompt } from './VneIdLoginPrompt';
+import { createRequestId } from '../request-id';
 
 interface CitizenReportsPageProps {
   selectedPosition: { latitude: number; longitude: number } | null;
@@ -88,7 +89,7 @@ export function CitizenReportsPage({ selectedPosition, isAuthenticated, onRequir
   const [loading, setLoading] = useState(false);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
-  const [clientRequestId, setClientRequestId] = useState(() => crypto.randomUUID());
+  const [clientRequestId, setClientRequestId] = useState(createRequestId);
   const [messages, setMessages] = useState<IncidentMessage[]>([]);
   const [messageText, setMessageText] = useState('');
   const [supplementFile, setSupplementFile] = useState<File | null>(null);
@@ -210,7 +211,7 @@ export function CitizenReportsPage({ selectedPosition, isAuthenticated, onRequir
       setNotice(`Đã lưu phản ánh local với mã ${payload.data.receiptCode}.`);
       setIncidents((current) => [payload.data, ...current.filter((item) => item.id !== payload.data.id)]);
       selectReceipt(payload.data.receiptCode);
-      setClientRequestId(crypto.randomUUID());
+      setClientRequestId(createRequestId());
       setSummary('');
       setDescription('');
       setLocationNote('');

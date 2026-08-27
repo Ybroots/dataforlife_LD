@@ -28,6 +28,7 @@ input, textarea, select { accent-color: var(--color-primary); }
 .feature-workspace { padding-top: 20px; }
 .feature-section { padding: 20px; background: var(--color-surface); }
 .feature-page { max-width: 960px; }
+.screen-error-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
 .eyebrow, .panel-intro .eyebrow { color: var(--color-muted); letter-spacing: .04em; }
 
 /* Original red identity, with the refined spacing and restrained controls. */

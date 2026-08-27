@@ -48,3 +48,45 @@ worker response (JavaScript, not an HTML fallback), vector tile responses, GIS
 boundary initialization, the restored red header, and screenshots at desktop,
 tablet and phone sizes. Inspect the screenshots before considering the release
 verified. Do not treat DOM markers or HTTP 200 alone as proof of a working map.
+
+## Required release check: features on real HTTP and a production build
+
+Localhost is a secure context even over HTTP. The pilot IP is not. A localhost-only
+test missed `crypto.randomUUID` crashing signed-in Reports and SOS. Request IDs now
+use cryptographic random bytes when the native UUID method is unavailable; the
+five web unit tests cover both paths. `npm test` from `platform` includes them.
+
+With the **fixture** API on 3001 and a freshly built Vite preview on 4173:
+
+```powershell
+python -m pip install -r platform/web/qa/requirements.txt
+python -m playwright install chromium
+python platform/web/qa/release-regression.py
+```
+
+Pass `--browser <path-to-existing-chromium>` to reuse an installed test browser.
+The script reads local fixture credentials from `platform/.env` or environment
+variables without printing them. It refuses any API that does not report
+`dataSource: fixture`. It uses isolated browser contexts, never the user's browser
+profile. The reserved `http://dataforlife.test` origin is intercepted and forwarded
+only to loopback preview: `isSecureContext` is genuinely false, without mocking
+the crypto API. There are no production writes.
+
+Coverage includes seven citizen features as guest and signed-in citizen at phone,
+tablet and desktop sizes, on HTTP and localhost; actual SPA navigation and browser
+back/forward; directory collapse and mobile tabs; report validation, attachment,
+map location, local submission and tracking; SOS short-press safety and local
+submission with GPS on localhost; four officer panes and six operations tabs;
+and a failed lazy chunk with visible recovery and navigation back to the map.
+The suite checks uncaught JavaScript errors, overflow and red branding, and saves
+screenshots under `tmp/release-regression`. An assertion failure exits nonzero.
+
+`--flows-only` skips the citizen viewport matrix for focused debugging.
+`--reproduce-only` is a historical negative test: it expects the original blank
+screen and must **fail** against the fixed build.
+
+Limits: HTTP cannot provide secure-context GPS; this is checked as an explicit
+unavailable state, not claimed as a successful SOS dispatch. GPS-enabled SOS needs
+HTTPS in deployment. AI and official VNeID remain labeled development/demo flows.
+Screens and navigation checks do not certify every backend business transition.
+Run the separate production-map check and inspect its screenshots before release.
