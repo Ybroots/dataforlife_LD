@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
-import { Bot, Building2, ChevronRight, CircleDotDashed, Info, Layers3, LocateFixed, MapPin, MessageCircleQuestion, Phone, Shield, ShieldAlert, Siren, TriangleAlert, X } from 'lucide-react';
+import { Building2, ChevronRight, CircleDotDashed, Info, Layers3, LoaderCircle, LocateFixed, MapPin, Phone, Shield, ShieldAlert, Siren, TriangleAlert, X } from 'lucide-react';
 import * as maplibregl from 'maplibre-gl';
 import type { GeoJSONSource, Map as MapLibreMap, MapMouseEvent } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -12,10 +12,8 @@ interface MapPaneProps {
   area: AreaLookup | null;
   selectedPosition: { latitude: number; longitude: number } | null;
   onCoordinateSelect: (latitude: number, longitude: number) => void;
-  isMobileActive: boolean;
   showDemoAlerts: boolean;
   hotlines: Hotline[];
-  onOpenAssistant: () => void;
   onOpenSos: () => void;
 }
 
@@ -85,7 +83,7 @@ function telHref(phone: string): string {
   return `tel:${phone.replace(/[^0-9+]/g, '')}`;
 }
 
-export function MapPane({ area, selectedPosition, onCoordinateSelect, isMobileActive, showDemoAlerts, onOpenAssistant, onOpenSos }: MapPaneProps) {
+export function MapPane({ area, selectedPosition, onCoordinateSelect, showDemoAlerts, onOpenSos }: MapPaneProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const onCoordinateSelectRef = useRef(onCoordinateSelect);
@@ -97,7 +95,8 @@ export function MapPane({ area, selectedPosition, onCoordinateSelect, isMobileAc
   const [tileWarning, setTileWarning] = useState(false);
   const [toolMenuOpen, setToolMenuOpen] = useState(false);
   const [creditsOpen, setCreditsOpen] = useState(false);
-  const [assistantPromptOpen, setAssistantPromptOpen] = useState(true);
+  const [locating, setLocating] = useState(false);
+  const [locationError, setLocationError] = useState('');
   const [boundaryVisible, setBoundaryVisible] = useState(true);
   const [serviceAreasVisible, setServiceAreasVisible] = useState(true);
   const [radiusVisible, setRadiusVisible] = useState(true);
@@ -128,7 +127,6 @@ export function MapPane({ area, selectedPosition, onCoordinateSelect, isMobileAc
     closePointPopup();
     setSelectedServiceAreaCode(point.serviceAreaCode);
     setToolMenuOpen(false);
-    setAssistantPromptOpen(false);
     activePopupRef.current = popup;
     setActivePointId(point.id);
     popup.setLngLat([point.longitude, point.latitude]).addTo(map);
@@ -208,7 +206,7 @@ export function MapPane({ area, selectedPosition, onCoordinateSelect, isMobileAc
             id: FILL_LAYER_ID,
             type: 'fill',
             source: SOURCE_ID,
-            paint: { 'fill-color': '#d71935', 'fill-opacity': 0.04 },
+            paint: { 'fill-color': '#24566a', 'fill-opacity': 0.04 },
           },
       );
       map.addLayer(
@@ -239,7 +237,7 @@ export function MapPane({ area, selectedPosition, onCoordinateSelect, isMobileAc
             id: LINE_LAYER_ID,
             type: 'line',
             source: SOURCE_ID,
-            paint: { 'line-color': '#d71935', 'line-width': 3 },
+            paint: { 'line-color': '#24566a', 'line-width': 2 },
           },
       );
       map.addLayer(
@@ -275,7 +273,6 @@ export function MapPane({ area, selectedPosition, onCoordinateSelect, isMobileAc
         closePointPopup();
         setSelectedServiceAreaCode(serviceAreaCode);
         setToolMenuOpen(false);
-        setAssistantPromptOpen(false);
         return;
       }
       closePointPopup();
@@ -300,7 +297,7 @@ export function MapPane({ area, selectedPosition, onCoordinateSelect, isMobileAc
   }, []);
 
   useEffect(() => {
-    if (!isMobileActive) return;
+    // The directory is an overlay: the map stays visible and must still resize.
     let frame = 0;
     const resizeAndFit = () => {
       window.cancelAnimationFrame(frame);
@@ -317,7 +314,7 @@ export function MapPane({ area, selectedPosition, onCoordinateSelect, isMobileAc
       window.cancelAnimationFrame(frame);
       window.removeEventListener('resize', resizeAndFit);
     };
-  }, [area, isMobileActive]);
+  }, [area]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -607,7 +604,6 @@ export function MapPane({ area, selectedPosition, onCoordinateSelect, isMobileAc
     closePointPopup();
     setSelectedServiceAreaCode(code);
     setToolMenuOpen(false);
-    setAssistantPromptOpen(false);
     const zone = area?.serviceAreas.find((candidate) => candidate.code === code);
     const map = mapRef.current;
     if (!zone || !map) return;
@@ -701,39 +697,28 @@ export function MapPane({ area, selectedPosition, onCoordinateSelect, isMobileAc
         <button className="map-sos-button" data-tour="sos" type="button" onClick={onOpenSos} aria-label="Mở quy trình SOS khẩn cấp" title="SOS khẩn cấp">
           <Siren size={22} aria-hidden="true" /><span><strong>SOS</strong><small>Mở quy trình</small></span>
         </button>
-        <div className="map-assistant">
-          {assistantPromptOpen && (
-            <div className="map-assistant-popover" id="map-assistant-popover" role="status">
-              <button type="button" onClick={() => setAssistantPromptOpen(false)} aria-label="Đóng lời chào trợ lý AI"><X size={16} aria-hidden="true" /></button>
-              <span className="map-assistant-avatar"><Bot size={20} aria-hidden="true" /></span>
-              <div><strong>Bạn cần giúp gì?</strong><small>Hỏi thủ tục, tìm trụ sở hoặc cách gửi phản ánh.</small></div>
-              <button className="map-assistant-start" type="button" onClick={onOpenAssistant}>Mở trợ lý AI</button>
-            </div>
-          )}
-          <button
-            className="my-location-button"
-            type="button"
-            onClick={() => {
-              if (navigator.geolocation) navigator.geolocation.getCurrentPosition((pos) => mapRef.current?.flyTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 15 }));
-            }}
-            aria-label="Vị trí của tôi"
-            title="Vị trí của tôi"
-          >
-            <LocateFixed size={20} aria-hidden="true" />
-          </button>
-          <button
-            className="map-assistant-button"
-            data-tour="assistant"
-            type="button"
-            onClick={() => setAssistantPromptOpen((open) => !open)}
-            aria-label={assistantPromptOpen ? 'Ẩn lời chào trợ lý AI' : 'Hiện lời chào trợ lý AI'}
-            aria-expanded={assistantPromptOpen}
-            aria-controls="map-assistant-popover"
-            title="Trợ lý AI"
-          >
-            <MessageCircleQuestion size={22} aria-hidden="true" />
-          </button>
-        </div>
+        <button
+          className="my-location-button"
+          data-tour="location"
+          type="button"
+          disabled={locating}
+          onClick={() => {
+            setLocationError('');
+            if (!navigator.geolocation) { setLocationError('Trình duyệt chưa hỗ trợ vị trí. Hãy tìm theo tên địa bàn.'); return; }
+            setLocating(true);
+            navigator.geolocation.getCurrentPosition((pos) => {
+              setLocating(false);
+              mapRef.current?.flyTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 15, duration: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 260 });
+            }, () => {
+              setLocating(false);
+              setLocationError('Chưa lấy được vị trí. Bật định vị, cho phép trình duyệt truy cập rồi thử lại.');
+            }, { timeout: 12000, maximumAge: 60000 });
+          }}
+          aria-label={locating ? 'Đang xác định vị trí' : 'Vị trí của tôi'}
+          title="Vị trí của tôi"
+        >
+          {locating ? <LoaderCircle className="spin" size={20} aria-hidden="true" /> : <LocateFixed size={20} aria-hidden="true" />}
+        </button>
       </div>
       <div className="map-credits">
         {creditsOpen && (
@@ -754,9 +739,10 @@ export function MapPane({ area, selectedPosition, onCoordinateSelect, isMobileAc
           aria-controls="map-credits-popover"
           title="Nguồn dữ liệu bản đồ"
         >
-          <Info size={18} aria-hidden="true" />
+          <Info size={14} aria-hidden="true" /><span>Nguồn bản đồ</span>
         </button>
       </div>
+      {locationError && <div className="map-location-error" role="alert"><span>{locationError}</span><button type="button" onClick={() => setLocationError('')} aria-label="Đóng thông báo vị trí"><X size={18} aria-hidden="true" /></button></div>}
       {tileWarning && <div className="map-network-warning" role="status">Nền bản đồ chưa tải; ranh giới GIS vẫn sử dụng được.</div>}
       {!selectedPosition && !selectedServiceArea && <div className="map-hint">Chạm một khu vực để xem các điểm bên trong</div>}
     </section>

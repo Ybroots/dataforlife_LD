@@ -1,6 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
-import type { CSSProperties } from 'react';
-import { ContactRound, FileWarning, HelpCircle, LogIn, Map, MapPinned, Menu, Search, ShieldCheck, UserRound, UserRoundCheck, X } from 'lucide-react';
+import { ContactRound, FileWarning, Map, MapPinned, Menu, Search, ShieldCheck, UserRound, UserRoundCheck, X } from 'lucide-react';
 import { ApiError, getCitizenSession, getOfficerSession, listHotlines, lookupByCode, lookupByLocation, searchAreas, signOutCitizen, signOutOfficer } from './api';
 import { DirectoryPanel } from './components/DirectoryPanel';
 import { FeatureDrawer } from './components/FeatureDrawer';
@@ -12,7 +11,6 @@ import { CitizenNotifications } from './components/CitizenNotifications';
 import type { FeatureId } from './features';
 import type { AreaLookup, AreaSummary, CitizenSession, Hotline, WorkflowActor } from './types';
 import directoryLogoUrl from '../../../assets/images/logo-128.png';
-import drumPatternUrl from '../../../assets/images/bg.png';
 import vneidLogoUrl from '../../../assets/images/vneid-logo.png';
 
 const MapPane = lazy(async () => {
@@ -287,9 +285,9 @@ export default function App() {
   }, [acceptEnvelope, policePortalRequested]);
 
   const handleCoordinateSelect = useCallback((latitude: number, longitude: number) => {
-    if (isCompactLayout) setMobileView('directory');
+    setMobileView('directory');
     void resolveCoordinates(latitude, longitude);
-  }, [isCompactLayout, resolveCoordinates]);
+  }, [resolveCoordinates]);
 
   const chooseArea = async (item: AreaSummary) => {
     setQuery(item.name);
@@ -299,6 +297,7 @@ export default function App() {
       const payload = await lookupByCode(item.code);
       acceptEnvelope(payload);
       if (payload.data.center) setSelectedPosition(payload.data.center);
+      setMobileView('directory');
     } catch (caught) {
       setState('error');
       setError(caught instanceof ApiError ? caught.message : 'Không thể tải địa bàn lúc này.');
@@ -370,7 +369,6 @@ export default function App() {
   }, [navigateToFeature]);
 
   const loading = state === 'loading';
-  const panelStyle = { '--drum-image': `url(${drumPatternUrl})` } as CSSProperties;
 
   if (appView === 'landing') {
     return (
@@ -397,11 +395,10 @@ export default function App() {
           <img src={directoryLogoUrl} alt="" width="44" height="44" />
         </div>
         <div className="brand-copy">
-          <strong>Bản đồ số Cảnh sát khu vực</strong>
+          <strong><span className="brand-title-full">Bản đồ số Cảnh sát khu vực</span><span className="brand-title-compact">Bản đồ CSKV</span></strong>
           <span>Công an tỉnh Lâm Đồng</span>
         </div>
         <div className="topbar-actions">
-          <div className="system-status"><ShieldCheck size={16} aria-hidden="true" /> Dữ liệu công khai</div>
           <CitizenNotifications key={citizenSession?.id ?? 'guest'} sessionId={citizenSession?.id ?? null}
             onRequireLogin={() => { setCitizenSession(null); setCitizenLoginAction('xem thông báo xử lý hồ sơ'); setCitizenLoginOpen(true); }}
             onOpenCase={(notification) => {
@@ -418,10 +415,6 @@ export default function App() {
             }} />
           {!citizenSession && <button className="citizen-login-trigger" data-tour="account" type="button" onClick={() => { setCitizenLoginAction('sử dụng ứng dụng người dân'); setCitizenLoginOpen(true); }} aria-label="Đăng nhập VNeID" title="Đăng nhập VNeID"><img src={vneidLogoUrl} alt="" width="30" height="30" /></button>}
           {citizenSession && <button className="citizen-session-button" data-tour="account" type="button" onClick={() => navigateToFeature('account')} title="Mở tài khoản người dân"><UserRoundCheck size={17} /><span>{citizenSession.displayName}</span></button>}
-          <button className="tour-help-button" type="button" onClick={startTour} aria-label="Hướng dẫn sử dụng" title="Hướng dẫn sử dụng"><HelpCircle size={19} /></button>
-          <button className="police-portal-link" type="button" onClick={() => setPoliceLoginOpen(true)}>
-            <LogIn size={18} aria-hidden="true" /><span>Đăng nhập CSKV</span>
-          </button>
           <button
             className="feature-menu-button"
             data-tour="feature-menu"
@@ -437,10 +430,10 @@ export default function App() {
 
       {activeFeature === 'directory' ? (
         <main className="workspace">
-          <aside ref={lookupPanelRef} className="lookup-panel" id="lookup-panel" style={panelStyle} aria-label="Danh bạ địa bàn">
+          <aside ref={lookupPanelRef} className="lookup-panel" id="lookup-panel" aria-label="Tìm kiếm và danh bạ địa bàn">
             <div className="panel-intro">
-              <p className="eyebrow">Tra cứu công khai theo địa bàn</p>
               <h1>Danh bạ địa bàn</h1>
+              <button type="button" onClick={() => { setMobileView('map'); document.getElementById('area-search')?.focus(); }} aria-label="Thu gọn danh bạ"><X size={20} aria-hidden="true" /></button>
             </div>
 
             <div className="search-block">
@@ -461,6 +454,7 @@ export default function App() {
                 {query && (
                   <button type="button" onClick={clearSearch} aria-label="Xóa nội dung tìm kiếm"><X size={17} aria-hidden="true" /></button>
                 )}
+                <button type="button" className="directory-toggle" onClick={() => setMobileView((view) => view === 'map' ? 'directory' : 'map')} aria-label={mobileView === 'map' ? 'Mở danh bạ địa bàn' : 'Thu gọn danh bạ'} aria-expanded={mobileView === 'directory'} aria-controls="directory-results"><ContactRound size={20} aria-hidden="true" /></button>
               </div>
               {(suggestions.length > 0 || searching) && (
                 <div className="suggestions" id="area-suggestions" role="listbox" aria-label="Kết quả tìm địa bàn">
@@ -489,6 +483,7 @@ export default function App() {
               )}
             </div>
 
+            <div id="directory-results" hidden={mobileView !== 'directory'}>
             {area ? (
               <div className="result-anchor" ref={resultAnchorRef}>
                 <DirectoryPanel area={area} isFixture={isFixture} hotlines={hotlines} />
@@ -504,6 +499,7 @@ export default function App() {
                 </div>
               )
             )}
+            </div>
           </aside>
 
           {mapRequested && (
@@ -512,10 +508,8 @@ export default function App() {
                 area={area}
                 selectedPosition={selectedPosition}
                 onCoordinateSelect={handleCoordinateSelect}
-                isMobileActive={mobileView === 'map'}
                 showDemoAlerts={showDemoAlerts}
                 hotlines={hotlines}
-                onOpenAssistant={() => navigateToFeature('assistant')}
                 onOpenSos={() => navigateToFeature('sos')}
               />
             </Suspense>
@@ -586,7 +580,7 @@ export default function App() {
         </button>
       </nav>
 
-      <FeatureDrawer open={featureMenuOpen} activeFeature={activeFeature} onClose={() => setFeatureMenuOpen(false)} onSelect={navigateToFeature} />
+      <FeatureDrawer open={featureMenuOpen} activeFeature={activeFeature} onClose={() => setFeatureMenuOpen(false)} onSelect={(feature) => { navigateToFeature(feature); if (feature === 'directory') setMobileView('directory'); }} onStartTour={startTour} onOfficerLogin={() => { setFeatureMenuOpen(false); setPoliceLoginOpen(true); }} />
       <PoliceLoginDialog open={policeLoginOpen} onSuccess={handlePoliceLoginSuccess} onClose={() => setPoliceLoginOpen(false)} />
       <CitizenAuthSheet open={citizenLoginOpen && !citizenSession} action={citizenLoginAction} onClose={() => setCitizenLoginOpen(false)} onSuccess={(session) => { setCitizenSession(session); setCitizenLoginOpen(false); setCitizenLoginNotice('Đăng nhập VNeID thành công.'); }} />
       {citizenLoginNotice && <div className="citizen-login-success" role="status" aria-live="polite"><ShieldCheck size={20} aria-hidden="true" /><span>{citizenLoginNotice}</span></div>}

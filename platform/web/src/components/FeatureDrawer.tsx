@@ -5,6 +5,8 @@ import {
   ChevronDown,
   ExternalLink,
   FileWarning,
+  HelpCircle,
+  LogIn,
   MapPinned,
   Scale,
   ShieldAlert,
@@ -18,6 +20,8 @@ interface FeatureDrawerProps {
   activeFeature: FeatureId;
   onClose: () => void;
   onSelect: (feature: FeatureId) => void;
+  onStartTour: () => void;
+  onOfficerLogin: () => void;
 }
 
 const featureItems: Array<{
@@ -54,7 +58,7 @@ const featureItems: Array<{
 
 const DRAWER_EXIT_DURATION_MS = 180;
 
-export function FeatureDrawer({ open, activeFeature, onClose, onSelect }: FeatureDrawerProps) {
+export function FeatureDrawer({ open, activeFeature, onClose, onSelect, onStartTour, onOfficerLogin }: FeatureDrawerProps) {
   const panelRef = useRef<HTMLElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const [present, setPresent] = useState(open);
@@ -124,7 +128,7 @@ export function FeatureDrawer({ open, activeFeature, onClose, onSelect }: Featur
         aria-labelledby="feature-drawer-title"
       >
         <div className="feature-drawer-header">
-          <h2 className="sr-only" id="feature-drawer-title">Menu tính năng</h2>
+          <h2 id="feature-drawer-title">Tính năng</h2>
           <button ref={closeButtonRef} type="button" onClick={onClose} aria-label="Đóng danh sách tính năng">
             <X size={21} aria-hidden="true" />
           </button>
@@ -150,6 +154,11 @@ export function FeatureDrawer({ open, activeFeature, onClose, onSelect }: Featur
               </a>
             );
           })}
+        </div>
+
+        <div className="feature-utilities">
+          <button type="button" onClick={onStartTour}><HelpCircle size={20} aria-hidden="true" /> Hướng dẫn sử dụng</button>
+          <button type="button" onClick={onOfficerLogin}><LogIn size={20} aria-hidden="true" /> Đăng nhập CSKV</button>
         </div>
 
         <details className="legal-responsibility-note">

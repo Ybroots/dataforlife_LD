@@ -16,6 +16,14 @@ deliberate three-second hold. The page must never turn a normal tap into a reque
 
 The existing application header and bottom navigation remain unchanged.
 
+## Visual refinement (2026-08-27)
+
+Inherit the neutral surfaces and typography in `../MASTER.md`. Reserve the red
+accent for SOS and serious warnings. Use a solid hold control with functional
+progress, no decorative pulse or glowing shadow. Separate location and optional
+details with dividers instead of nested cards. Keep all safety instructions,
+GPS recovery and pilot limitations visible. Quick-call remains hidden.
+
 ## Interaction rules
 
 - Pointer, touch and keyboard press-and-hold all use the same 3,000 ms threshold.

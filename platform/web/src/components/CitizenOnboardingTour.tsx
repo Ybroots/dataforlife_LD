@@ -7,10 +7,10 @@ import {
   Check,
   LayoutGrid,
   Map,
-  MessageCircleQuestion,
+  LocateFixed,
   MousePointerClick,
   Siren,
-  Sparkles,
+  HelpCircle,
   UserRound,
   X,
 } from 'lucide-react';
@@ -33,14 +33,14 @@ const steps: TourStep[] = [
     body: 'Trong khoảng một phút, bạn sẽ biết nơi tra cứu địa bàn, gửi phản ánh và tìm hỗ trợ khi cần.',
     points: ['6 điểm chính, có thể quay lại bất cứ lúc nào', 'Mỗi khung sáng chỉ đúng vị trí cần ghi nhớ'],
     action: 'Chọn “Bắt đầu khám phá” để xem từng vị trí.',
-    icon: Sparkles,
+    icon: HelpCircle,
   },
   {
     target: '[data-tour="feature-menu"]',
     eyebrow: 'Điều hướng',
     title: 'Tất cả chức năng ở một nơi',
     body: 'Nút Tính năng mở danh sách đầy đủ mà không làm mất vị trí bạn đang xem trên bản đồ.',
-    points: ['Cảnh báo địa bàn và phản ánh hiện trường', 'SOS, đánh giá, trợ lý và tài khoản'],
+    points: ['Cảnh báo địa bàn và phản ánh hiện trường', 'Đánh giá, trợ lý và hướng dẫn sử dụng'],
     action: 'Sau tour, nhấn “Tính năng” để chọn công việc cần làm.',
     icon: LayoutGrid,
   },
@@ -63,13 +63,13 @@ const steps: TourStep[] = [
     icon: Siren,
   },
   {
-    target: '[data-tour="assistant"]',
-    eyebrow: 'Hỗ trợ sử dụng',
-    title: 'Trợ lý luôn ở cạnh bản đồ',
-    body: 'Mở trợ lý để xem câu hỏi gợi ý, cách gửi phản ánh và hướng dẫn tra cứu thủ tục.',
-    points: ['Biểu tượng bong bóng nằm cạnh nút định vị', 'Nội dung AI chuyên sâu đang tiếp tục phát triển'],
-    action: 'Nhấn biểu tượng sau tour để mở lời chào của trợ lý.',
-    icon: MessageCircleQuestion,
+    target: '[data-tour="location"]',
+    eyebrow: 'Vị trí của bạn',
+    title: 'Trở về vị trí hiện tại',
+    body: 'Nút định vị đưa bản đồ về nơi bạn đang đứng. Cho phép trình duyệt dùng vị trí khi được hỏi.',
+    points: ['Bật định vị trên thiết bị để sử dụng', 'Trợ lý và các chức năng khác nằm trong menu Tính năng'],
+    action: 'Sau tour, nhấn nút định vị khi muốn xem khu vực quanh mình.',
+    icon: LocateFixed,
   },
   {
     target: '[data-tour="account"]',
@@ -94,7 +94,11 @@ export function CitizenOnboardingTour({ open, onClose }: { open: boolean; onClos
     if (!open) return;
     const update = () => {
       const selector = steps[step]?.target;
-      const node = selector ? document.querySelector<HTMLElement>(selector) : null;
+      // Account has desktop and mobile controls; highlight the visible one.
+      const node = selector ? [...document.querySelectorAll<HTMLElement>(selector)].find((candidate) => {
+        const bounds = candidate.getBoundingClientRect();
+        return bounds.width > 0 && bounds.height > 0 && window.getComputedStyle(candidate).visibility !== 'hidden';
+      }) : null;
       if (!node) { setRect(null); return; }
       const bounds = node.getBoundingClientRect();
       const top = Math.max(8, bounds.top - 6);
@@ -105,7 +109,7 @@ export function CitizenOnboardingTour({ open, onClose }: { open: boolean; onClos
         width: Math.max(0, Math.min(bounds.width + 12, window.innerWidth - left - 8)),
         height: Math.max(0, Math.min(bounds.height + 12, window.innerHeight - top - 8)),
       });
-      node.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+      node.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
     };
     const timer = window.setTimeout(update, 80);
     const targetRefresh = window.setInterval(update, 320);
