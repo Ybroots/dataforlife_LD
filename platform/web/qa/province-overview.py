@@ -52,7 +52,7 @@ with sync_playwright() as pw:
         selector = page.get_by_role('combobox', name='Chọn xã/phường')
         expect(selector.locator('option')).to_have_count(125)
         expect(selector).to_have_value('')
-        expect(page.locator('.map-canvas')).not_to_have_attribute('data-boundary-rendered')
+        assert page.locator('.map-canvas').get_attribute('data-boundary-rendered') is None
         assert 'area=' not in page.url and not page.locator('.position-marker').count(), 'Default must not claim a GPS location'
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
         page.screenshot(path=OUT/f'overview-{width}.png')
@@ -63,7 +63,7 @@ with sync_playwright() as pw:
             assert 'area='+code in page.url
             page.get_by_role('button',name='Toàn tỉnh',exact=True).click()
             expect(selector).to_have_value('')
-            expect(page.locator('.map-canvas')).not_to_have_attribute('data-boundary-rendered')
+            assert page.locator('.map-canvas').get_attribute('data-boundary-rendered') is None
         print(f'PASS province overview + 4 regional selections + return at {width}px',flush=True)
 
     # Exercise an actual rendered polygon, not only a dropdown/API request.
