@@ -11,7 +11,7 @@ import { CitizenNotifications } from './components/CitizenNotifications';
 import { ScreenErrorBoundary } from './components/ScreenErrorBoundary';
 import type { FeatureId } from './features';
 import type { AreaLookup, AreaOverview, AreaSummary, CitizenSession, Hotline, WorkflowActor } from './types';
-import directoryLogoUrl from '../../../assets/images/images.png';
+import directoryLogoUrl from '../../../assets/images/logo-transparent.png';
 
 const MapPane = lazy(async () => {
   const module = await import('./components/MapPane');

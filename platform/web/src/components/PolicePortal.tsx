@@ -50,7 +50,7 @@ import type {
 import { WorkflowTimeline } from './WorkflowTimeline';
 import { IncidentCollaboration } from './IncidentCollaboration';
 import { PoliceOperations } from './PoliceOperations';
-import directoryLogoUrl from '../../../../assets/images/images.png';
+import directoryLogoUrl from '../../../../assets/images/logo-transparent.png';
 
 type WorkDetail = Incident | SosEvent;
 type QueueFilter = 'all' | 'sos' | 'incident';

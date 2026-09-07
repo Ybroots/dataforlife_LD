@@ -34,7 +34,7 @@ input, textarea, select { accent-color: var(--color-primary); }
 /* Original red identity, with the refined spacing and restrained controls. */
 .topbar, .police-topbar { color: #fff; background: var(--color-primary); border-bottom: 1px solid var(--color-primary-deep); box-shadow: none; gap: 12px; }
 .topbar { padding-inline: 20px; }
-.brand-mark { width: 40px; height: 40px; flex-basis: 40px; border: 1px solid rgba(255,255,255,.58); border-radius: 8px; background: #fff; box-shadow: none; }
+.brand-mark { width: 40px; height: 40px; flex-basis: 40px; border: 0; border-radius: 8px; background: transparent; box-shadow: none; }
 .brand-copy strong { font-size: 15px; font-weight: 600; letter-spacing: 0; }
 .brand-copy span { color: #fff; font-size: 12px; }
 .brand-copy .brand-title-full, .brand-copy .brand-title-compact { display: inline; font: inherit; color: inherit; }
@@ -46,7 +46,7 @@ input, textarea, select { accent-color: var(--color-primary); }
 .topbar-icon-btn:hover, .topbar-icon-btn[aria-pressed="true"] { background: var(--color-primary-deep); border-color: #fff; }
 .topbar button:focus-visible, .police-topbar button:focus-visible { outline-color: #fff; }
 .police-brand { color: #fff; }
-.police-brand img { border: 1px solid rgba(255,255,255,.58); background: #fff; box-shadow: none; }
+.police-brand img { border: 0; background: transparent; box-shadow: none; }
 .police-brand strong { font-size: 15px; font-weight: 600; }
 .notification-button > span, .citizen-notification-count { background: var(--color-primary); color: #fff; border-color: #fff; font-size: 11px; }
 
