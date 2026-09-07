@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 import path from 'node:path';
 import { Client } from 'pg';
@@ -16,12 +16,19 @@ if (!outputPath || !path.isAbsolute(outputPath)) {
   throw new Error('Use --credentials-output with an absolute path outside the repository.');
 }
 
-const client = new Client({ connectionString: databaseUrl });
-await client.connect();
 const created: Array<{ username: string; password: string; displayName: string }> = [];
+mkdirSync(path.dirname(outputPath), { recursive: true, mode: 0o700 });
+writeFileSync(outputPath, '', { encoding: 'utf8', mode: 0o600, flag: 'wx' });
+
+const client = new Client({ connectionString: databaseUrl });
+let connected = false;
+let inTransaction = false;
 
 try {
+  await client.connect();
+  connected = true;
   await client.query('BEGIN');
+  inTransaction = true;
   const locality = await client.query<{ id: string }>('SELECT id::text FROM localities WHERE code = $1', ['24781']);
   const localityId = locality.rows[0]?.id;
   if (!localityId) throw new Error('Không tìm thấy địa bàn mã 24781 để gán tài khoản cán bộ.');
@@ -50,26 +57,27 @@ try {
     );
     created.push({ username, password, displayName });
   }
+  const body = [
+    'Tài khoản cán bộ DataForLife',
+    `Tạo lúc: ${new Date().toISOString()}`,
+    'Phạm vi: địa bàn thí điểm Xuân Hương - Đà Lạt (mã 24781)',
+    '',
+    ...created.flatMap((account) => [
+      `${account.displayName}`,
+      `Tên đăng nhập: ${account.username}`,
+      `Mật khẩu: ${account.password}`,
+      '',
+    ]),
+  ].join('\n');
+  writeFileSync(outputPath, body, { encoding: 'utf8', mode: 0o600, flag: 'w' });
   await client.query('COMMIT');
+  inTransaction = false;
 } catch (error) {
-  await client.query('ROLLBACK');
+  if (inTransaction) await client.query('ROLLBACK');
+  unlinkSync(outputPath);
   throw error;
 } finally {
-  await client.end();
+  if (connected) await client.end();
 }
 
-mkdirSync(path.dirname(outputPath), { recursive: true, mode: 0o700 });
-const body = [
-  'Tài khoản cán bộ DataForLife',
-  `Tạo lúc: ${new Date().toISOString()}`,
-  'Phạm vi: địa bàn thí điểm Xuân Hương - Đà Lạt (mã 24781)',
-  '',
-  ...created.flatMap((account) => [
-    `${account.displayName}`,
-    `Tên đăng nhập: ${account.username}`,
-    `Mật khẩu: ${account.password}`,
-    '',
-  ]),
-].join('\n');
-writeFileSync(outputPath, body, { encoding: 'utf8', mode: 0o600, flag: 'wx' });
 console.log(`Đã tạo ${created.length} tài khoản; thông tin đăng nhập được lưu tại ${outputPath}.`);
