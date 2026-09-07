@@ -1,11 +1,12 @@
 from pathlib import Path
 from time import time
+import os
 
 from playwright.sync_api import sync_playwright
 
 
 ROOT = Path(__file__).resolve().parents[1]
-BASE_URL = "http://127.0.0.1:5173/"
+BASE_URL = os.environ.get("QA_BASE_URL", "http://127.0.0.1:5173/").rstrip("/") + "/"
 
 
 def env_value(name: str) -> str:
@@ -30,7 +31,7 @@ with sync_playwright() as playwright:
     guest.get_by_role("button", name="Tài khoản", exact=True).click()
     guest.get_by_role("button", name="Đăng nhập hoặc đăng ký", exact=True).click()
     guest.get_by_role("tab", name="Đăng ký").click()
-    phone = f"0987{str(int(time() * 1000))[-6:]}"
+    phone = os.environ.get("QA_CITIZEN_PHONE", f"0987{str(int(time() * 1000))[-6:]}")
     guest.get_by_label("Họ và tên").fill("Nguyễn Văn An")
     guest.get_by_label("Số điện thoại").fill(phone)
     guest.get_by_label("Mật khẩu", exact=True).fill("CongDan@2026")
@@ -44,8 +45,10 @@ with sync_playwright() as playwright:
     entry = officer.get_by_role("button", name="Cán bộ Công an")
     if entry.count():
         entry.click()
-    officer.locator('input[name="username"]').fill(env_value("API_OFFICER_USERNAME"))
-    officer.locator('input[name="password"]').fill(env_value("API_OFFICER_PASSWORD"))
+    officer_username = os.environ.get("QA_OFFICER_USERNAME", env_value("API_OFFICER_USERNAME"))
+    officer_password = os.environ.get("QA_OFFICER_PASSWORD", env_value("API_OFFICER_PASSWORD"))
+    officer.locator('input[name="username"]').fill(officer_username)
+    officer.locator('input[name="password"]').fill(officer_password)
     officer.locator('form button[type="submit"]').click()
     officer.locator(".police-portal").wait_for()
     assert officer.get_by_role("button", name="Mở công cụ nghiệp vụ", exact=True).is_visible()

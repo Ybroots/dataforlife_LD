@@ -1,11 +1,12 @@
 from pathlib import Path
 from time import time
+import os
 
 from playwright.sync_api import sync_playwright
 
 
 ROOT = Path(__file__).resolve().parents[1]
-BASE_URL = "http://127.0.0.1:5173/"
+BASE_URL = os.environ.get("QA_BASE_URL", "http://127.0.0.1:5173/").rstrip("/") + "/"
 
 
 with sync_playwright() as playwright:
@@ -24,7 +25,7 @@ with sync_playwright() as playwright:
     page.goto(BASE_URL, wait_until="networkidle")
     page.get_by_role("button", name="Đăng nhập hoặc đăng ký").click()
     page.get_by_role("tab", name="Đăng ký").click()
-    phone = f"0987{str(int(time() * 1000))[-6:]}"
+    phone = os.environ.get("QA_CITIZEN_PHONE", f"0987{str(int(time() * 1000))[-6:]}")
     password = "CongDan@2026"
     page.get_by_label("Họ và tên").fill("Nguyễn Văn An")
     page.get_by_label("Số điện thoại").fill(phone)
