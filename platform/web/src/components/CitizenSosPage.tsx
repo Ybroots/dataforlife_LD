@@ -358,7 +358,7 @@ export function CitizenSosPage({ isAuthenticated, onRequireLogin }: CitizenSosPa
               onKeyUp={(event) => { if (event.key === ' ' || event.key === 'Enter') cancelHold(); }}
               onContextMenu={(event) => event.preventDefault()}
               disabled={submitting || (isAuthenticated && locating)}
-              aria-label={isAuthenticated ? 'Nhấn giữ 3 giây để gửi SOS khẩn cấp' : 'Đăng nhập VNeID để sử dụng SOS'}
+              aria-label={isAuthenticated ? 'Nhấn giữ 3 giây để gửi SOS khẩn cấp' : 'Đăng nhập tài khoản để sử dụng SOS'}
               aria-describedby="sos-hold-status sos-legal-hint"
             >
               <span className="sos-hold-ring" aria-hidden="true" />
@@ -371,7 +371,7 @@ export function CitizenSosPage({ isAuthenticated, onRequireLogin }: CitizenSosPa
             <p id="sos-hold-status" className={isAuthenticated && position ? 'sos-ready-status ready' : 'sos-ready-status'} aria-live="polite">
               {isAuthenticated
                 ? position ? 'Đã đăng nhập · GPS sẵn sàng' : locating ? 'Đang xác định vị trí…' : 'Cần xác định vị trí để gửi SOS'
-                : 'Đăng nhập VNeID trước khi kích hoạt SOS'}
+                : 'Đăng nhập tài khoản trước khi kích hoạt SOS'}
             </p>
           </div>
 

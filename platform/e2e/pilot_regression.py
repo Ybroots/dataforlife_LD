@@ -45,7 +45,7 @@ with sync_playwright() as playwright:
     citizen.on("console", lambda message: console_errors.append(message.text) if message.type == "error" else None)
     citizen.goto(BASE_URL, wait_until="networkidle")
     citizen.locator(".login-role-card.citizen").click()
-    citizen.get_by_role("button", name="Đăng nhập VNeID").click()
+    citizen.get_by_role("button", name="Đăng nhập hoặc đăng ký tài khoản người dân").click()
     citizen.locator('input[name="username"]').fill(env_value("API_CITIZEN_USERNAME"))
     citizen.locator('input[name="password"]').fill(env_value("API_CITIZEN_PASSWORD"))
     citizen.locator('.citizen-auth-form button[type="submit"]').click()

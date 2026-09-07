@@ -239,6 +239,19 @@ export interface WorkflowActorResponse {
   localityCode: string | null;
 }
 
+export interface CitizenAccountRecord {
+  id: string;
+  username: string;
+  displayName: string;
+  passwordHash: string;
+}
+
+export interface OfficerAccountRecord {
+  actorId: string;
+  username: string;
+  passwordHash: string;
+}
+
 export interface PublicAlertResponse {
   id: string;
   areaCode: string;
@@ -349,6 +362,10 @@ export interface DirectoryRepository {
   lookupByLocation(latitude: number, longitude: number): Promise<AreaLookupResponse | null>;
   listHotlines(): Promise<HotlineResponse[]>;
   listUnitContacts(): Promise<PublicUnitContactResponse[]>;
+  findCitizenAccountByUsername(username: string): Promise<CitizenAccountRecord | null>;
+  findCitizenAccountById(id: string): Promise<CitizenAccountRecord | null>;
+  createCitizenAccount(input: CitizenAccountRecord): Promise<CitizenAccountRecord | null>;
+  findOfficerAccountByUsername(username: string): Promise<OfficerAccountRecord | null>;
   listPublicAlerts(areaCode: string): Promise<PublicAlertResponse[]>;
   createIncident(citizenId: string, input: CreateIncidentInput): Promise<IncidentResponse>;
   listCitizenIncidents(citizenId: string): Promise<IncidentResponse[]>;

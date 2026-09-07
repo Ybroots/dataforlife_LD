@@ -21,13 +21,14 @@ with sync_playwright() as p:
         permissions=["geolocation"],
     )
     page = context.new_page()
+    page.add_init_script("localStorage.setItem('cskv-citizen-tour-v1', 'completed')")
     console_errors: list[str] = []
     page.on("console", lambda msg: console_errors.append(msg.text) if msg.type == "error" else None)
 
     page.goto("http://127.0.0.1:5173/?feature=reports", wait_until="networkidle")
     if page.get_by_role("button", name="Người dân").count():
         page.get_by_role("button", name="Người dân").click()
-    page.get_by_text("Bạn phải đăng nhập VNeID thì mới có thể gửi phản ánh.", exact=True).wait_for()
+    page.get_by_text("Bạn cần đăng nhập tài khoản người dân để gửi phản ánh.", exact=True).wait_for()
     assert page.locator('input[name="summary"]').count() == 0
     assert page.locator(".workflow-map-canvas").count() == 0
     assert page.locator(".citizen-feature-auth-gate").is_visible()
@@ -37,7 +38,7 @@ with sync_playwright() as p:
     page.locator('input[name="username"]').fill(env_value("API_CITIZEN_USERNAME"))
     page.locator('input[name="password"]').fill(env_value("API_CITIZEN_PASSWORD"))
     page.locator('form button[type="submit"]').click()
-    page.locator(".citizen-session-button").wait_for()
+    page.locator(".citizen-auth-sheet").wait_for(state="detached")
     page.get_by_role("heading", name="Nội dung, vị trí và xác nhận").wait_for()
 
     page.goto("http://127.0.0.1:5173/?feature=alerts", wait_until="networkidle")
@@ -56,13 +57,17 @@ with sync_playwright() as p:
     page.get_by_role("button", name="Nghiệp vụ", exact=True).wait_for()
     page.get_by_role("button", name="Nghiệp vụ", exact=True).click()
     page.get_by_role("heading", name="Nghiệp vụ địa bàn").wait_for()
+    page.get_by_role("tab", name="Cảnh báo").click()
     assert page.get_by_text("Phát hành cảnh báo khu vực").is_visible()
     assert page.evaluate("document.documentElement.scrollWidth <= document.documentElement.clientWidth")
     page.get_by_role("tab", name="Tuần tra").click()
     assert page.get_by_text("Lập lịch tuần tra").is_visible()
     page.screenshot(path=str(ROOT / "e2e" / "artifacts" / "police-operations-mobile.png"), full_page=True)
 
-    unexpected_errors = [item for item in console_errors if "401 (Unauthorized)" not in item]
+    unexpected_errors = [
+        item for item in console_errors
+        if "401 (Unauthorized)" not in item and "tiles.openfreemap.org" not in item
+    ]
     assert not unexpected_errors, unexpected_errors
     print("extended-ui-ok: citizen alerts + officer operations at 390x844")
     browser.close()

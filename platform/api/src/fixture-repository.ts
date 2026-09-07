@@ -25,6 +25,8 @@ import type {
   StatisticsPeriod,
   SosResponse,
   WorkflowActorResponse,
+  CitizenAccountRecord,
+  OfficerAccountRecord,
 } from './types.js';
 import { assertIncidentTransition, assertSosTransition, type IncidentStatus, type SosStatus, WorkflowError } from './workflow.js';
 
@@ -105,10 +107,32 @@ export class FixtureDirectoryRepository implements DirectoryRepository {
   private readonly ratings = new Map<string, SatisfactionRatingResponse>();
   private readonly patrols = new Map<string, PatrolSessionResponse>();
   private readonly mapPoints = new Map<string, OperationalMapPointResponse>();
+  private readonly citizenAccounts = new Map<string, CitizenAccountRecord>();
+  private readonly officerAccounts = new Map<string, OfficerAccountRecord>();
 
   private readonly actors: WorkflowActorResponse[] = [
     { id: 'officer-demo-xuan-huong', actorType: 'officer', displayName: 'CSKV trực địa bàn Xuân Hương', localityCode: 'DEMO-DA-LAT' },
   ];
+
+  async findCitizenAccountByUsername(username: string): Promise<CitizenAccountRecord | null> {
+    const normalized = username.toLocaleLowerCase('vi-VN');
+    return [...this.citizenAccounts.values()].find((account) => account.username.toLocaleLowerCase('vi-VN') === normalized) ?? null;
+  }
+
+  async findCitizenAccountById(id: string): Promise<CitizenAccountRecord | null> {
+    return this.citizenAccounts.get(id) ?? null;
+  }
+
+  async createCitizenAccount(input: CitizenAccountRecord): Promise<CitizenAccountRecord | null> {
+    if (await this.findCitizenAccountByUsername(input.username)) return null;
+    this.citizenAccounts.set(input.id, structuredClone(input));
+    return structuredClone(input);
+  }
+
+  async findOfficerAccountByUsername(username: string): Promise<OfficerAccountRecord | null> {
+    const normalized = username.toLocaleLowerCase('vi-VN');
+    return [...this.officerAccounts.values()].find((account) => account.username.toLocaleLowerCase('vi-VN') === normalized) ?? null;
+  }
 
   async searchAreas(query: string, limit: number): Promise<AreaSummary[]> {
     const normalized = query.trim().toLocaleLowerCase('vi');

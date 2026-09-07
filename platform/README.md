@@ -56,6 +56,21 @@ Các endpoint của vertical slice:
 - `GET /v1/lookup/by-code/:code`
 - `GET /v1/lookup/by-location?lat=...&lng=...`
 - `GET /v1/hotlines`
+- `POST /v1/auth/citizen/register` — tạo tài khoản người dân bằng số điện thoại,
+  họ tên và mật khẩu; mật khẩu chỉ lưu dưới dạng băm scrypt có salt.
+- `POST /v1/auth/citizen/login`
+- `POST /v1/auth/officer/login`
+
+Tài khoản cán bộ được cấp phát bằng công cụ riêng; mật khẩu sinh ngẫu nhiên chỉ
+được ghi vào tệp tuyệt đối nằm ngoài repository, với quyền đọc của chủ sở hữu:
+
+```powershell
+npm --workspace @cskv/api run accounts:provision-officers -- --credentials-output=C:\secure\dataforlife-officers.txt
+```
+
+Công cụ mặc định tạo `canbo01` đến `canbo05` cho địa bàn thí điểm mã `24781`,
+không xoay mật khẩu của tài khoản đã tồn tại. VNeID chính thức chưa được kết nối
+và giao diện phải luôn ghi rõ giới hạn này.
 
 Các bề mặt local:
 

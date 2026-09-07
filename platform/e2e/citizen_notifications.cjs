@@ -66,11 +66,11 @@ async function main() {
     await citizen.getByRole('button',{name:/^Người dân/}).click();
     await citizen.locator('.citizen-notification-bell').click();
     await citizen.getByText('Nhận cập nhật từ cán bộ',{exact:true}).waitFor();
-    await citizen.locator('.citizen-notification-inbox').getByRole('button',{name:'Đăng nhập VNeID'}).click();
+    await citizen.locator('.citizen-notification-inbox').getByRole('button',{name:'Đăng nhập hoặc đăng ký'}).click();
     await citizen.locator('.citizen-auth-sheet input[name="username"]').fill(credentials.API_CITIZEN_USERNAME);
     await citizen.locator('.citizen-auth-sheet input[name="password"]').fill(credentials.API_CITIZEN_PASSWORD);
     await citizen.locator('.citizen-auth-sheet button[type="submit"]').click();
-    await citizen.getByText('Đăng nhập VNeID thành công.',{exact:true}).waitFor();
+    await citizen.getByText('Đăng nhập tài khoản thành công.',{exact:true}).waitFor();
     const initial=await api(context,'/v1/citizen/notifications');
     const report=await api(context,'/v1/citizen/incidents',{
       clientRequestId:randomUUID(),category:'security',summary:'E2E chuông thông báo Xuân Hương',

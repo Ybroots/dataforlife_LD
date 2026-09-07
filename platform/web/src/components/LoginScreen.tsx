@@ -1,9 +1,8 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Eye, EyeOff, LogIn, ShieldCheck, UserCheck, Users, ArrowRight } from 'lucide-react';
-import { ApiError, signInCitizen, signInOfficer } from '../api';
+import { ApiError, registerCitizen, signInCitizen, signInOfficer } from '../api';
 import type { CitizenSession, WorkflowActor } from '../types';
 import directoryLogoUrl from '../../../../assets/images/logo-128.png';
-import vneidLogoUrl from '../../../../assets/images/vneid-logo.png';
 
 interface LoginScreenProps {
   onEnterAsCitizen: () => void;
@@ -12,16 +11,18 @@ interface LoginScreenProps {
 }
 
 export function LoginScreen({ onEnterAsCitizen, onCitizenLoginSuccess, onOfficerLoginSuccess }: LoginScreenProps) {
-  const [view, setView] = useState<'roles' | 'citizen-login' | 'officer-login'>('roles');
+  const [view, setView] = useState<'roles' | 'citizen-login' | 'citizen-register' | 'officer-login'>('roles');
   const [username, setUsername] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [password, setPassword] = useState('');
+  const [passwordConfirmation, setPasswordConfirmation] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const usernameRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    if (view === 'officer-login' || view === 'citizen-login') {
+    if (view === 'officer-login' || view === 'citizen-login' || view === 'citizen-register') {
       setTimeout(() => usernameRef.current?.focus({ preventScroll: true }), 50);
     }
   }, [view]);
@@ -51,9 +52,23 @@ export function LoginScreen({ onEnterAsCitizen, onCitizenLoginSuccess, onOfficer
       setError('Vui lòng nhập mật khẩu.');
       return;
     }
+    if (view === 'citizen-register' && (displayName.trim().length < 2 || displayName.trim().length > 100)) {
+      setError('Họ tên phải có từ 2 đến 100 ký tự.');
+      return;
+    }
+    if (view === 'citizen-register' && (password.length < 10 || !/[A-Za-z]/.test(password) || !/\d/.test(password))) {
+      setError('Mật khẩu cần ít nhất 10 ký tự, gồm chữ và số.');
+      return;
+    }
+    if (view === 'citizen-register' && password !== passwordConfirmation) {
+      setError('Mật khẩu nhập lại chưa khớp.');
+      return;
+    }
     setSubmitting(true);
     try {
-      const session = await signInCitizen(phone, password);
+      const session = view === 'citizen-register'
+        ? await registerCitizen(phone, displayName.trim(), password)
+        : await signInCitizen(phone, password);
       setError('');
       onCitizenLoginSuccess(session);
     } catch (caught) {
@@ -64,7 +79,7 @@ export function LoginScreen({ onEnterAsCitizen, onCitizenLoginSuccess, onOfficer
   };
 
   const backToRoles = () => {
-    setView('roles'); setError(''); setUsername(''); setPassword('');
+    setView('roles'); setError(''); setUsername(''); setDisplayName(''); setPassword(''); setPasswordConfirmation('');
   };
 
   return (
@@ -108,50 +123,60 @@ export function LoginScreen({ onEnterAsCitizen, onCitizenLoginSuccess, onOfficer
               </div>
             </section>
 
-            <div className="login-divider"><span>hoặc đăng nhập qua</span></div>
+            <div className="login-divider"><span>tài khoản người dân</span></div>
 
             <div className="login-vneid-section">
               <button className="login-vneid-button" type="button" onClick={() => setView('citizen-login')}>
                 <div className="vneid-icon">
-                  <img src={vneidLogoUrl} alt="VNeID" width="36" height="36" style={{ borderRadius: '8px' }} />
+                  <UserCheck size={24} aria-hidden="true" />
                 </div>
                 <div className="vneid-body">
-                  <strong>Đăng nhập VNeID</strong>
-                  <span>Dùng số điện thoại và mật khẩu bản mô phỏng</span>
+                  <strong>Đăng nhập hoặc đăng ký</strong>
+                  <span>Dùng số điện thoại và mật khẩu của hệ thống</span>
                 </div>
                 <ArrowRight size={19} aria-hidden="true" />
               </button>
               <p className="vneid-notice">
                 <UserCheck size={13} aria-hidden="true" />
-                Chỉ mô phỏng giao diện. Kết nối và xác thực VNeID thật sẽ được phát triển sau.
+                Tài khoản được lưu trên hệ thống. VNeID chính thức chưa được kết nối.
               </p>
             </div>
           </>
         )}
 
-        {view === 'citizen-login' && (
+        {(view === 'citizen-login' || view === 'citizen-register') && (
           <div className="citizen-inline-login-panel">
             <button className="officer-login-back" type="button" onClick={backToRoles}>
               <ArrowLeft size={16} aria-hidden="true" /> Quay lại
             </button>
             <div className="citizen-inline-login-header">
-              <img src={vneidLogoUrl} alt="VNeID" width="58" height="58" />
-              <div><p>VNEID · BẢN MÔ PHỎNG</p><h2>Đăng nhập người dân</h2></div>
+              <UserCheck size={34} aria-hidden="true" />
+              <div><p>TÀI KHOẢN NGƯỜI DÂN</p><h2>{view === 'citizen-login' ? 'Đăng nhập' : 'Đăng ký tài khoản'}</h2></div>
             </div>
-            <p className="officer-login-lead">Nhập số điện thoại và mật khẩu thử nghiệm. Hệ thống chưa kết nối VNeID thật.</p>
+            <p className="officer-login-lead">Tài khoản này dùng cho phản ánh, SOS và theo dõi tiến trình trên hệ thống.</p>
+            <div className="citizen-auth-modes" role="tablist" aria-label="Chọn hình thức xác thực">
+              <button type="button" role="tab" aria-selected={view === 'citizen-login'} onClick={() => { setView('citizen-login'); setError(''); }}>Đăng nhập</button>
+              <button type="button" role="tab" aria-selected={view === 'citizen-register'} onClick={() => { setView('citizen-register'); setError(''); }}>Đăng ký</button>
+            </div>
             <form className="officer-login-form" onSubmit={submitCitizen} noValidate>
+              {view === 'citizen-register' && <label htmlFor="ls-citizen-name">Họ và tên
+                <input id="ls-citizen-name" name="displayName" type="text" autoComplete="name" minLength={2} maxLength={100} placeholder="Nguyễn Văn An" value={displayName} onChange={(event) => { setDisplayName(event.target.value); setError(''); }} aria-invalid={Boolean(error)} required />
+              </label>}
               <label htmlFor="ls-citizen-phone">Số điện thoại
                 <input ref={usernameRef} id="ls-citizen-phone" name="username" type="tel" inputMode="numeric" autoComplete="tel" maxLength={10} placeholder="0912345678" value={username} onChange={(event) => { setUsername(event.target.value.replace(/[^0-9 ]/g, '')); setError(''); }} aria-invalid={Boolean(error)} required />
               </label>
               <div className="officer-password-field">
                 <label htmlFor="ls-citizen-password">Mật khẩu</label>
                 <span className="officer-password-wrap">
-                  <input id="ls-citizen-password" name="password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" value={password} onChange={(event) => { setPassword(event.target.value); setError(''); }} aria-invalid={Boolean(error)} required />
+                  <input id="ls-citizen-password" name="password" type={showPassword ? 'text' : 'password'} autoComplete={view === 'citizen-register' ? 'new-password' : 'current-password'} value={password} onChange={(event) => { setPassword(event.target.value); setError(''); }} aria-invalid={Boolean(error)} required />
                   <button type="button" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}>{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
                 </span>
               </div>
+              {view === 'citizen-register' && <label htmlFor="ls-citizen-password-confirmation">Nhập lại mật khẩu
+                <input id="ls-citizen-password-confirmation" name="passwordConfirmation" type={showPassword ? 'text' : 'password'} autoComplete="new-password" value={passwordConfirmation} onChange={(event) => { setPasswordConfirmation(event.target.value); setError(''); }} aria-invalid={Boolean(error)} required />
+              </label>}
               {error && <p className="officer-login-error" role="alert">{error}</p>}
-              <button className="citizen-inline-login-submit" type="submit" disabled={submitting}><LogIn size={19} /> {submitting ? 'Đang xác thực…' : 'Đăng nhập'}</button>
+              <button className="citizen-inline-login-submit" type="submit" disabled={submitting}><LogIn size={19} /> {submitting ? 'Đang xử lý…' : view === 'citizen-login' ? 'Đăng nhập' : 'Tạo tài khoản'}</button>
             </form>
           </div>
         )}

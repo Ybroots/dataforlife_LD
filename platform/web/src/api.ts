@@ -113,6 +113,13 @@ export async function signInCitizen(username: string, password: string): Promise
   return payload.data;
 }
 
+export async function registerCitizen(username: string, displayName: string, password: string): Promise<CitizenSession> {
+  const payload = await request<{ data: CitizenSession }>('/v1/auth/citizen/register', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, displayName, password }),
+  });
+  return payload.data;
+}
+
 export async function getCitizenSession(): Promise<CitizenSession | null> {
   try {
     const payload = await request<{ data: CitizenSession }>('/v1/auth/citizen/session');

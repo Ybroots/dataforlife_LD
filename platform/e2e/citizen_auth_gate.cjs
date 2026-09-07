@@ -23,18 +23,18 @@ async function enterCitizen(page) {
 }
 
 async function loginFromGate(page, credentials) {
-  await page.locator('.citizen-feature-auth-gate').getByRole('button', { name: 'Đăng nhập VNeID' }).click();
+  await page.locator('.citizen-feature-auth-gate').getByRole('button', { name: 'Đăng nhập hoặc đăng ký' }).click();
   if (await page.locator('.citizen-auth-intro').count()) throw new Error('The obsolete VNeID intro step must not be displayed');
   await page.locator('.citizen-auth-sheet input[name="username"]').fill(credentials.API_CITIZEN_USERNAME);
   await page.locator('.citizen-auth-sheet input[name="password"]').fill(credentials.API_CITIZEN_PASSWORD);
   await page.locator('.citizen-auth-sheet button[type="submit"]').click();
-  await page.getByText('Đăng nhập VNeID thành công.', { exact: true }).waitFor();
+  await page.getByText('Đăng nhập tài khoản thành công.', { exact: true }).waitFor();
   if (await page.locator('.citizen-feature-auth-gate').count()) throw new Error('The gate must be replaced by the requested feature after login');
 }
 
 async function assertHidden(page, selectors) {
   for (const selector of selectors) {
-    if (await page.locator(selector).count()) throw new Error(`${selector} must not be mounted before VNeID login`);
+    if (await page.locator(selector).count()) throw new Error(`${selector} must not be mounted before citizen login`);
   }
 }
 
@@ -51,7 +51,7 @@ async function main() {
     await reportPage.goto(BASE_URL, { waitUntil: 'networkidle' });
     await enterCitizen(reportPage);
     await reportPage.getByRole('button', { name: 'Phản ánh', exact: true }).click();
-    await reportPage.getByText('Bạn phải đăng nhập VNeID thì mới có thể gửi phản ánh.', { exact: true }).waitFor();
+    await reportPage.getByText('Bạn cần đăng nhập tài khoản người dân để gửi phản ánh.', { exact: true }).waitFor();
     await assertHidden(reportPage, ['.operational-form', '.workflow-map-canvas', 'input[name="summary"]']);
     await reportPage.screenshot({ path: path.join(ARTIFACTS, '01-report-login-gate.png'), fullPage: true });
     await loginFromGate(reportPage, credentials);
@@ -66,7 +66,7 @@ async function main() {
     await sosPage.goto(BASE_URL, { waitUntil: 'networkidle' });
     await enterCitizen(sosPage);
     await sosPage.locator('.map-sos-button').click();
-    await sosPage.getByText('Bạn phải đăng nhập VNeID thì mới có thể sử dụng SOS.', { exact: true }).waitFor();
+    await sosPage.getByText('Bạn cần đăng nhập tài khoản người dân để sử dụng SOS.', { exact: true }).waitFor();
     await assertHidden(sosPage, ['.sos-emergency-screen', '.sos-hold-button', '.workflow-map-canvas']);
     await sosPage.screenshot({ path: path.join(ARTIFACTS, '03-sos-login-gate.png'), fullPage: true });
     await loginFromGate(sosPage, credentials);

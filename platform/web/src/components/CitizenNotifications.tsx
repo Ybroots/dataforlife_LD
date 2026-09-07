@@ -169,7 +169,7 @@ export function CitizenNotifications({ sessionId, onRequireLogin, onOpenCase }: 
         {(!sessionId || needsLogin) ? <div className="citizen-notification-empty">
           <Bell size={36} aria-hidden="true" /><h3>Nhận cập nhật từ cán bộ</h3>
           <p>{needsLogin ? error : 'Đăng nhập để xem tiến trình xử lý phản ánh và SOS của bạn.'}</p>
-          <button className="citizen-notification-login" type="button" onClick={() => { setOpen(false); onRequireLogin(); }}><img src={vneidLogoUrl} width="28" height="28" alt="" />Đăng nhập VNeID</button>
+          <button className="citizen-notification-login" type="button" onClick={() => { setOpen(false); onRequireLogin(); }}><img src={vneidLogoUrl} width="28" height="28" alt="" />Đăng nhập hoặc đăng ký</button>
         </div> : <>
           <div className="citizen-notification-tools">
             <div role="group" aria-label="Lọc thông báo">

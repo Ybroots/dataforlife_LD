@@ -136,7 +136,7 @@ async function main() {
   results.push(await inspect(citizenUi, 'citizen-feature-menu', citizenUiViewport, true));
   await citizenUi.getByRole('button', { name: 'Đóng danh sách tính năng', exact: true }).last().click();
   await citizenUi.waitForTimeout(220);
-  await citizenUi.getByRole('button', { name: 'Đăng nhập VNeID' }).click();
+  await citizenUi.getByRole('button', { name: 'Đăng nhập hoặc đăng ký tài khoản người dân' }).click();
   await citizenUi.waitForTimeout(220);
   results.push(await inspect(citizenUi, 'citizen-auth-sheet', citizenUiViewport, true));
   await citizenUiContext.close();

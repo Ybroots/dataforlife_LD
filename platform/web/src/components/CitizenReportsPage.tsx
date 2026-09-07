@@ -329,7 +329,7 @@ export function CitizenReportsPage({ selectedPosition, isAuthenticated, onRequir
           {!isAuthenticated && <VneIdLoginPrompt action="gửi phản ánh" onLogin={onRequireLogin} compact />}
           <button className="primary-action" type={isAuthenticated ? 'submit' : 'button'} onClick={isAuthenticated ? undefined : onRequireLogin} disabled={isAuthenticated && (submitting || !position || !consent || !evidenceFile)}>
             {submitting ? <span className="loader light" /> : <Send size={18} aria-hidden="true" />}
-            {submitting ? 'Đang lưu phản ánh…' : isAuthenticated ? 'Gửi phản ánh' : 'Đăng nhập VNeID để gửi'}
+            {submitting ? 'Đang lưu phản ánh…' : isAuthenticated ? 'Gửi phản ánh' : 'Đăng nhập để gửi'}
           </button>
         </form>
       ) : (

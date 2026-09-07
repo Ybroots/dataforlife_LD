@@ -33,7 +33,7 @@ function collectConsoleError(target, role, message) {
 
 async function citizenLogin(page, credentials) {
   await page.getByRole('button', { name: 'Tài khoản', exact: true }).click();
-  await page.getByRole('button', { name: /Đăng nhập bằng VNeID/ }).click();
+  await page.getByRole('button', { name: /Đăng nhập hoặc đăng ký/ }).click();
   await page.locator('.citizen-auth-sheet input[name="username"]').fill(credentials.API_CITIZEN_USERNAME);
   await page.locator('.citizen-auth-sheet input[name="password"]').fill(credentials.API_CITIZEN_PASSWORD);
   await page.locator('.citizen-auth-sheet form button[type="submit"]').click();

@@ -31,6 +31,8 @@ import type {
   SosResponse,
   StationResponse,
   WorkflowActorResponse,
+  CitizenAccountRecord,
+  OfficerAccountRecord,
 } from './types.js';
 import type { IncidentStatus, SosStatus } from './workflow.js';
 
@@ -78,6 +80,62 @@ export class PostgresDirectoryRepository implements DirectoryRepository {
 
   markCitizenNotificationsRead(citizenId: string, ids: string[]): Promise<number> {
     return this.citizenNotifications.markRead(citizenId, ids);
+  }
+
+  async findCitizenAccountByUsername(username: string): Promise<CitizenAccountRecord | null> {
+    const result = await this.pool.query<{
+      id: string; username: string; display_name: string; password_hash: string;
+    }>(
+      `SELECT id, username, display_name, password_hash
+       FROM citizen_accounts
+       WHERE username_normalized = $1 AND status = 'active'`,
+      [username.toLocaleLowerCase('vi-VN')],
+    );
+    const row = result.rows[0];
+    return row ? { id: row.id, username: row.username, displayName: row.display_name, passwordHash: row.password_hash } : null;
+  }
+
+  async findCitizenAccountById(id: string): Promise<CitizenAccountRecord | null> {
+    const result = await this.pool.query<{
+      id: string; username: string; display_name: string; password_hash: string;
+    }>(
+      `SELECT id, username, display_name, password_hash
+       FROM citizen_accounts WHERE id = $1 AND status = 'active'`,
+      [id],
+    );
+    const row = result.rows[0];
+    return row ? { id: row.id, username: row.username, displayName: row.display_name, passwordHash: row.password_hash } : null;
+  }
+
+  async createCitizenAccount(input: CitizenAccountRecord): Promise<CitizenAccountRecord | null> {
+    const result = await this.pool.query<{
+      id: string; username: string; display_name: string; password_hash: string;
+    }>(
+      `INSERT INTO citizen_accounts (id, username, username_normalized, display_name, password_hash)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (username_normalized) DO NOTHING
+       RETURNING id, username, display_name, password_hash`,
+      [input.id, input.username, input.username.toLocaleLowerCase('vi-VN'), input.displayName, input.passwordHash],
+    );
+    const row = result.rows[0];
+    return row ? { id: row.id, username: row.username, displayName: row.display_name, passwordHash: row.password_hash } : null;
+  }
+
+  async findOfficerAccountByUsername(username: string): Promise<OfficerAccountRecord | null> {
+    const result = await this.pool.query<{
+      actor_id: string; username: string; password_hash: string;
+    }>(
+      `SELECT actor_id, username, password_hash
+       FROM officer_accounts
+       WHERE username_normalized = $1 AND status = 'active'`,
+      [username.toLocaleLowerCase('vi-VN')],
+    );
+    const row = result.rows[0];
+    return row ? {
+      actorId: row.actor_id,
+      username: row.username,
+      passwordHash: row.password_hash,
+    } : null;
   }
 
   async searchAreas(query: string, limit: number): Promise<AreaSummary[]> {

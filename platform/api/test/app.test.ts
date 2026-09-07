@@ -408,4 +408,47 @@ describe('local operational workflows', () => {
     const citizenIncidents = await app.inject({ method: 'GET', url: '/v1/citizen/incidents', headers: { cookie: citizenCookie } });
     expect(citizenIncidents.statusCode).toBe(200);
   });
+
+  it('registers, persists and authenticates a citizen account without claiming VNeID verification', async () => {
+    const repository = new FixtureDirectoryRepository();
+    app = await buildApp(repository, {
+      corsOrigin: 'http://localhost:5173',
+      citizenSessionSecret: 'test-citizen-secret-with-more-than-32-characters',
+    });
+
+    const weakPassword = await app.inject({
+      method: 'POST', url: '/v1/auth/citizen/register',
+      payload: { username: '0912345678', displayName: 'Nguyễn Văn An', password: '12345678' },
+    });
+    expect(weakPassword.statusCode).toBe(400);
+    expect(weakPassword.json().error).toBe('WEAK_PASSWORD');
+
+    const registered = await app.inject({
+      method: 'POST', url: '/v1/auth/citizen/register',
+      payload: { username: '0912345678', displayName: 'Nguyễn Văn An', password: 'CongDan@2026' },
+    });
+    expect(registered.statusCode).toBe(201);
+    expect(registered.json().data.displayName).toBe('Nguyễn Văn An');
+    expect(registered.headers['set-cookie']).toContain('HttpOnly');
+
+    const duplicate = await app.inject({
+      method: 'POST', url: '/v1/auth/citizen/register',
+      payload: { username: '0912345678', displayName: 'Tên khác', password: 'CongDan@2026' },
+    });
+    expect(duplicate.statusCode).toBe(409);
+    expect(duplicate.json().error).toBe('ACCOUNT_EXISTS');
+
+    const login = await app.inject({
+      method: 'POST', url: '/v1/auth/citizen/login',
+      payload: { username: '0912345678', password: 'CongDan@2026' },
+    });
+    expect(login.statusCode).toBe(200);
+    expect(login.json().data.displayName).toBe('Nguyễn Văn An');
+
+    const badLogin = await app.inject({
+      method: 'POST', url: '/v1/auth/citizen/login',
+      payload: { username: '0912345678', password: 'khong-dung-2026' },
+    });
+    expect(badLogin.statusCode).toBe(401);
+  });
 });

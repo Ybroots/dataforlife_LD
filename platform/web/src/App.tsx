@@ -12,7 +12,6 @@ import { ScreenErrorBoundary } from './components/ScreenErrorBoundary';
 import type { FeatureId } from './features';
 import type { AreaLookup, AreaOverview, AreaSummary, CitizenSession, Hotline, WorkflowActor } from './types';
 import directoryLogoUrl from '../../../assets/images/logo-128.png';
-import vneidLogoUrl from '../../../assets/images/vneid-logo.png';
 
 const MapPane = lazy(async () => {
   const module = await import('./components/MapPane');
@@ -395,7 +394,7 @@ export default function App() {
               window.history.pushState({}, '', url);
               setActiveFeature(feature); setFeatureMenuOpen(false); setCaseNavigationVersion((value) => value + 1);
             }} />
-          {!citizenSession && <button className="citizen-login-trigger" data-tour="account" type="button" onClick={() => { setCitizenLoginAction('sử dụng ứng dụng người dân'); setCitizenLoginOpen(true); }} aria-label="Đăng nhập VNeID" title="Đăng nhập VNeID"><img src={vneidLogoUrl} alt="" width="30" height="30" /></button>}
+          {!citizenSession && <button className="citizen-login-trigger" data-tour="account" type="button" onClick={() => { setCitizenLoginAction('sử dụng ứng dụng người dân'); setCitizenLoginOpen(true); }} aria-label="Đăng nhập hoặc đăng ký tài khoản người dân" title="Tài khoản người dân"><UserRoundCheck size={22} aria-hidden="true" /></button>}
           {citizenSession && <button className="citizen-session-button" data-tour="account" type="button" onClick={() => navigateToFeature('account')} title="Mở tài khoản người dân"><UserRoundCheck size={17} /><span>{citizenSession.displayName}</span></button>}
           <button
             className="feature-menu-button"
@@ -584,7 +583,7 @@ export default function App() {
 
       <FeatureDrawer open={featureMenuOpen} activeFeature={activeFeature} onClose={() => setFeatureMenuOpen(false)} onSelect={(feature) => { navigateToFeature(feature); if (feature === 'directory') setMobileView('directory'); }} onStartTour={startTour} onOfficerLogin={() => { setFeatureMenuOpen(false); setPoliceLoginOpen(true); }} />
       <PoliceLoginDialog open={policeLoginOpen} onSuccess={handlePoliceLoginSuccess} onClose={() => setPoliceLoginOpen(false)} />
-      <CitizenAuthSheet open={citizenLoginOpen && !citizenSession} action={citizenLoginAction} onClose={() => setCitizenLoginOpen(false)} onSuccess={(session) => { setCitizenSession(session); setCitizenLoginOpen(false); setCitizenLoginNotice('Đăng nhập VNeID thành công.'); }} />
+      <CitizenAuthSheet open={citizenLoginOpen && !citizenSession} action={citizenLoginAction} onClose={() => setCitizenLoginOpen(false)} onSuccess={(session) => { setCitizenSession(session); setCitizenLoginOpen(false); setCitizenLoginNotice('Đăng nhập tài khoản thành công.'); }} />
       {citizenLoginNotice && <div className="citizen-login-success" role="status" aria-live="polite"><ShieldCheck size={20} aria-hidden="true" /><span>{citizenLoginNotice}</span></div>}
       <CitizenOnboardingTour open={tourOpen} onClose={(completed) => { setTourOpen(false); window.localStorage.setItem(CITIZEN_TOUR_KEY, completed ? 'completed' : 'skipped'); }} />
     </div>

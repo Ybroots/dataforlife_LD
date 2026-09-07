@@ -1,5 +1,6 @@
 import cors from '@fastify/cors';
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
+import { randomUUID } from 'node:crypto';
 import type { CreateIncidentInput, CreateSosInput, DirectoryRepository, IncidentAttachmentInput } from './types.js';
 import {
   authenticateOfficer,
@@ -20,6 +21,7 @@ import {
   verifyCitizenSession,
   type CitizenCredential,
 } from './citizen-auth.js';
+import { hashPassword, verifyPassword } from './password.js';
 
 interface AppOptions {
   corsOrigin: string;
@@ -61,6 +63,10 @@ function text(value: unknown, minimum: number, maximum: number): string | null {
   if (typeof value !== 'string') return null;
   const normalized = value.trim();
   return normalized.length >= minimum && normalized.length <= maximum ? normalized : null;
+}
+
+function passwordText(value: unknown, minimum: number, maximum: number): string | null {
+  return typeof value === 'string' && value.length >= minimum && value.length <= maximum ? value : null;
 }
 
 function optionalText(value: unknown, maximum: number): string | null | undefined {
@@ -133,8 +139,9 @@ export async function buildApp(
     allowTestAuthHeaders: process.env.NODE_ENV === 'test',
   },
 ): Promise<FastifyInstance> {
-  const app = Fastify({ logger: false, bodyLimit: 30 * 1024 * 1024 });
+  const app = Fastify({ logger: false, bodyLimit: 30 * 1024 * 1024, trustProxy: '127.0.0.1' });
   await app.register(cors, { origin: options.corsOrigin, credentials: true });
+  const registrationAttempts = new Map<string, number[]>();
 
   app.addHook('onSend', async (_request, reply) => {
     reply.header('X-Content-Type-Options', 'nosniff');
@@ -229,15 +236,19 @@ export async function buildApp(
   };
 
   app.post<{ Body: { username?: unknown; password?: unknown } }>('/v1/auth/officer/login', { preHandler: workflowDisabled }, async (request, reply) => {
-    if (!options.officerSessionSecret || !options.officerCredentials?.length) {
+    if (!options.officerSessionSecret) {
       return reply.code(503).send({ error: 'AUTH_NOT_CONFIGURED', message: 'Xác thực cán bộ chưa được cấu hình.' });
     }
     const username = text(request.body?.username, 3, 100);
-    const password = text(request.body?.password, 8, 200);
+    const password = passwordText(request.body?.password, 8, 200);
     if (!username || !password) {
       return reply.code(400).send({ error: 'INVALID_CREDENTIALS', message: 'Tên đăng nhập hoặc mật khẩu không hợp lệ.' });
     }
-    const credential = authenticateOfficer(options.officerCredentials, username, password);
+    const configuredCredential = authenticateOfficer(options.officerCredentials ?? [], username, password);
+    const storedCredential = configuredCredential ? null : await repository.findOfficerAccountByUsername(username);
+    const credential = configuredCredential ?? (storedCredential && await verifyPassword(password, storedCredential.passwordHash)
+      ? { username: storedCredential.username, password: '', actorId: storedCredential.actorId }
+      : null);
     if (!credential) {
       return reply.code(401).send({ error: 'INVALID_CREDENTIALS', message: 'Tên đăng nhập hoặc mật khẩu không đúng.' });
     }
@@ -267,13 +278,17 @@ export async function buildApp(
   });
 
   app.post<{ Body: { username?: unknown; password?: unknown } }>('/v1/auth/citizen/login', { preHandler: workflowDisabled }, async (request, reply) => {
-    if (!options.citizenSessionSecret || !options.citizenCredentials?.length) {
+    if (!options.citizenSessionSecret) {
       return reply.code(503).send({ error: 'CITIZEN_AUTH_NOT_CONFIGURED', message: 'Đăng nhập người dân chưa được cấu hình.' });
     }
     const username = text(request.body?.username, 3, 100);
-    const password = text(request.body?.password, 8, 200);
+    const password = passwordText(request.body?.password, 8, 200);
     if (!username || !password) return reply.code(400).send({ error: 'INVALID_CREDENTIALS', message: 'Tên đăng nhập hoặc mật khẩu không hợp lệ.' });
-    const credential = authenticateCitizen(options.citizenCredentials, username, password);
+    const configuredCredential = authenticateCitizen(options.citizenCredentials ?? [], username, password);
+    const storedCredential = configuredCredential ? null : await repository.findCitizenAccountByUsername(username);
+    const credential = configuredCredential ?? (storedCredential && await verifyPassword(password, storedCredential.passwordHash)
+      ? { username: storedCredential.username, password: '', citizenId: storedCredential.id, displayName: storedCredential.displayName }
+      : null);
     if (!credential) return reply.code(401).send({ error: 'INVALID_CREDENTIALS', message: 'Tên đăng nhập hoặc mật khẩu không đúng.' });
     const token = createCitizenSession(credential.citizenId, options.citizenSessionSecret);
     reply.header('Set-Cookie', citizenSessionCookie(token, options.secureCookies === true));
@@ -281,13 +296,65 @@ export async function buildApp(
     return { data: { id: credential.citizenId, displayName: credential.displayName } };
   });
 
+  app.post<{ Body: { username?: unknown; displayName?: unknown; password?: unknown } }>('/v1/auth/citizen/register', { preHandler: workflowDisabled }, async (request, reply) => {
+    if (!options.citizenSessionSecret) {
+      return reply.code(503).send({ error: 'CITIZEN_AUTH_NOT_CONFIGURED', message: 'Đăng ký người dân chưa được cấu hình.' });
+    }
+    const now = Date.now();
+    if (registrationAttempts.size > 10_000) {
+      for (const [ip, attempts] of registrationAttempts) {
+        if (!attempts.some((timestamp) => now - timestamp < 10 * 60_000)) registrationAttempts.delete(ip);
+      }
+    }
+    const recentAttempts = (registrationAttempts.get(request.ip) ?? []).filter((timestamp) => now - timestamp < 10 * 60_000);
+    if (recentAttempts.length >= 5) {
+      reply.header('Retry-After', '600');
+      return reply.code(429).send({ error: 'REGISTRATION_RATE_LIMITED', message: 'Bạn đã thử đăng ký quá nhiều lần. Vui lòng thử lại sau 10 phút.' });
+    }
+    registrationAttempts.set(request.ip, [...recentAttempts, now]);
+
+    const username = text(request.body?.username, 10, 10);
+    const displayName = text(request.body?.displayName, 2, 100);
+    const password = typeof request.body?.password === 'string' ? request.body.password : '';
+    if (!username || !/^0\d{9}$/.test(username)) {
+      return reply.code(400).send({ error: 'INVALID_PHONE', message: 'Số điện thoại phải gồm 10 chữ số và bắt đầu bằng số 0.' });
+    }
+    if (!displayName) {
+      return reply.code(400).send({ error: 'INVALID_DISPLAY_NAME', message: 'Họ tên phải có từ 2 đến 100 ký tự.' });
+    }
+    if (password.length < 10 || password.length > 200 || !/[A-Za-z]/.test(password) || !/\d/.test(password)) {
+      return reply.code(400).send({ error: 'WEAK_PASSWORD', message: 'Mật khẩu cần ít nhất 10 ký tự, gồm chữ và số.' });
+    }
+    const conflictsWithConfigured = options.citizenCredentials?.some(
+      (candidate) => candidate.username.toLocaleLowerCase('vi-VN') === username.toLocaleLowerCase('vi-VN'),
+    );
+    if (conflictsWithConfigured || await repository.findCitizenAccountByUsername(username)) {
+      return reply.code(409).send({ error: 'ACCOUNT_EXISTS', message: 'Số điện thoại này đã có tài khoản. Hãy đăng nhập hoặc dùng số khác.' });
+    }
+    const passwordHash = await hashPassword(password);
+    const account = await repository.createCitizenAccount({
+      id: `citizen-${randomUUID()}`,
+      username,
+      displayName,
+      passwordHash,
+    });
+    if (!account) {
+      return reply.code(409).send({ error: 'ACCOUNT_EXISTS', message: 'Số điện thoại này đã có tài khoản. Hãy đăng nhập hoặc dùng số khác.' });
+    }
+    const token = createCitizenSession(account.id, options.citizenSessionSecret);
+    reply.header('Set-Cookie', citizenSessionCookie(token, options.secureCookies === true));
+    reply.header('Cache-Control', 'no-store');
+    return reply.code(201).send({ data: { id: account.id, displayName: account.displayName } });
+  });
+
   app.get('/v1/auth/citizen/session', { preHandler: workflowDisabled }, async (request, reply) => {
     const citizenId = citizenIdentity(request);
     if (!citizenId) return reply.code(401).send({ error: 'CITIZEN_SESSION_REQUIRED', message: 'Vui lòng đăng nhập tài khoản người dân.' });
-    const credential = options.citizenCredentials?.find((candidate) => candidate.citizenId === citizenId);
-    if (!credential && !options.allowTestAuthHeaders) return reply.code(403).send({ error: 'CITIZEN_ACCOUNT_DISABLED', message: 'Tài khoản người dân không còn hiệu lực.' });
+    const configuredCredential = options.citizenCredentials?.find((candidate) => candidate.citizenId === citizenId);
+    const storedCredential = configuredCredential ? null : await repository.findCitizenAccountById(citizenId);
+    if (!configuredCredential && !storedCredential && !options.allowTestAuthHeaders) return reply.code(403).send({ error: 'CITIZEN_ACCOUNT_DISABLED', message: 'Tài khoản người dân không còn hiệu lực.' });
     reply.header('Cache-Control', 'no-store');
-    return { data: { id: citizenId, displayName: credential?.displayName ?? 'Người dân kiểm thử' } };
+    return { data: { id: citizenId, displayName: configuredCredential?.displayName ?? storedCredential?.displayName ?? 'Người dân kiểm thử' } };
   });
 
   app.post('/v1/auth/citizen/logout', async (_request, reply) => {

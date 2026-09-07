@@ -31,8 +31,8 @@ def main() -> None:
 
         page.goto(BASE_URL)
         page.wait_for_load_state("networkidle")
-        vneid_button = page.get_by_role("button", name="Đăng nhập VNeID")
-        assert vneid_button.is_enabled(), "Nút đăng nhập VNeID phải thao tác được"
+        vneid_button = page.get_by_role("button", name="Đăng nhập hoặc đăng ký")
+        assert vneid_button.is_enabled(), "Nút tài khoản người dân phải thao tác được"
         vneid_button.click()
         page.screenshot(path=str(ARTIFACTS / "citizen-vneid-entry-mobile.png"), full_page=True)
         page.get_by_label("Số điện thoại").fill("0912345678")
@@ -89,8 +89,8 @@ def main() -> None:
         assert anonymous_page.locator(".sos-current-location").count() == 0
         assert anonymous_page.locator(".sos-hold-button").count() == 0
         assert anonymous_page.locator(".citizen-feature-auth-gate").is_visible()
-        anonymous_page.locator(".citizen-feature-auth-gate").get_by_role("button", name="Đăng nhập VNeID").click()
-        assert anonymous_page.locator(".citizen-auth-sheet").is_visible(), "Nút VNeID phải mở biểu mẫu đăng nhập"
+        anonymous_page.locator(".citizen-feature-auth-gate").get_by_role("button", name="Đăng nhập hoặc đăng ký").click()
+        assert anonymous_page.locator(".citizen-auth-sheet").is_visible(), "Nút tài khoản phải mở biểu mẫu đăng nhập"
         assert anonymous_page.get_by_label("Số điện thoại", exact=True).is_visible()
         anonymous_page.screenshot(path=str(ARTIFACTS / "citizen-vneid-gate-mobile.png"), full_page=True)
 
@@ -103,7 +103,7 @@ def main() -> None:
         public_page.wait_for_selector(".map-sos-button", timeout=15_000)
         assert public_page.locator(".map-canvas").is_visible(), "Người dân chưa đăng nhập vẫn phải xem được bản đồ"
         assert public_page.locator(".map-sos-button").is_visible(), "SOS phải hiện trên bản đồ công khai"
-        public_page.get_by_role("button", name="Đăng nhập VNeID").click()
+        public_page.get_by_role("button", name="Đăng nhập hoặc đăng ký tài khoản người dân").click()
         assert public_page.get_by_label("Số điện thoại", exact=True).is_visible()
 
         report_context = browser.new_context(viewport={"width": 375, "height": 667})
@@ -112,7 +112,7 @@ def main() -> None:
         report_page.wait_for_load_state("networkidle")
         report_page.get_by_role("button", name="Người dân").click()
         assert report_page.locator(".workflow-map-canvas").count() == 0, "Chưa đăng nhập không được dựng bản đồ biểu mẫu"
-        assert report_page.locator(".citizen-feature-auth-gate").is_visible(), "Phản ánh phải chặn bằng VNeID trước khi hiện biểu mẫu"
+        assert report_page.locator(".citizen-feature-auth-gate").is_visible(), "Phản ánh phải yêu cầu tài khoản trước khi hiện biểu mẫu"
         assert report_page.locator(".map-sos-button").count() == 0, "SOS không được lặp lại ngoài bản đồ chính"
         assert report_page.evaluate("document.documentElement.scrollWidth <= window.innerWidth"), "Trang phản ánh không được tràn ngang trên mobile"
         report_page.screenshot(path=str(ARTIFACTS / "citizen-report-public-mobile.png"), full_page=True)
