@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Eye, EyeOff, LogIn, ShieldCheck, UserCheck, Users, ArrowRight } from 'lucide-react';
 import { ApiError, registerCitizen, signInCitizen, signInOfficer } from '../api';
 import type { CitizenSession, WorkflowActor } from '../types';
-import directoryLogoUrl from '../../../../assets/images/logo-128.png';
+import directoryLogoUrl from '../../../../assets/images/images.png';
 
 interface LoginScreenProps {
   onEnterAsCitizen: () => void;

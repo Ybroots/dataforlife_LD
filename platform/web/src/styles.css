@@ -146,9 +146,9 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
 .brand-mark {
   width: 46px; height: 46px; flex: 0 0 46px; overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.66); border-radius: 8px;
-  background: #087843; box-shadow: none;
+  background: #fff; box-shadow: none;
 }
-.brand-mark img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.brand-mark img { width: 100%; height: 100%; display: block; padding: 3px; object-fit: contain; object-position: center; border-radius: 7px; }
 .brand-copy { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
 .brand-copy strong {
   font-family: "Be Vietnam Pro", "Segoe UI", sans-serif;
@@ -775,7 +775,7 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
 .login-screen { min-height: 100dvh; display: grid; place-items: center; padding: max(24px, var(--safe-top)) max(16px, var(--safe-right)) max(24px, var(--safe-bottom)) max(16px, var(--safe-left)); background: var(--color-canvas); overflow-y: auto; }
 .login-screen-inner { width: min(440px, 100%); display: flex; flex-direction: column; gap: 28px; }
 .login-brand { display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; color: #fff; padding: 12px 0 4px; }
-.login-brand-logo img { width: 64px; height: 64px; border-radius: 8px; box-shadow: none; }
+.login-brand-logo img { width: 72px; height: 72px; display: block; padding: 5px; object-fit: contain; object-position: center; border: 1px solid rgba(255,255,255,.56); border-radius: 12px; background: #fff; box-shadow: none; }
 .login-brand-text { display: flex; flex-direction: column; gap: 4px; }
 .login-brand-text strong { font-family: "Be Vietnam Pro", sans-serif; font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }
 .login-brand-text span { font-size: 12px; color: rgba(255,255,255,0.65); }
@@ -851,7 +851,7 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
 .police-login-screen { min-height: 100dvh; display: grid; place-content: center; justify-items: center; gap: 18px; padding: max(24px, var(--safe-top)) max(16px, var(--safe-right)) max(24px, var(--safe-bottom)); background: var(--color-canvas); overflow-y: auto; }
 .police-login-screen .police-login-card { width: min(470px, calc(100vw - 32px)); }
 .police-login-brand { display: flex; align-items: center; gap: 10px; color: #fff; text-decoration: none; }
-.police-login-brand img { width: 44px; height: 44px; border-radius: 8px; }
+.police-login-brand img { width: 48px; height: 48px; display: block; padding: 3px; object-fit: contain; object-position: center; border: 1px solid rgba(255,255,255,.55); border-radius: 9px; background: #fff; }
 .police-login-brand span { display: grid; gap: 2px; }
 .police-login-brand strong { font-family: "Be Vietnam Pro", sans-serif; font-size: 14px; }
 .police-login-brand small { color: rgba(255,255,255,.68); font-size: 12px; }
@@ -1030,7 +1030,7 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
   border-bottom: 2px solid var(--color-primary-deep); box-shadow: none;
 }
 .police-brand { min-height: 44px; display: flex; align-items: center; gap: 10px; color: #fff; text-decoration: none; }
-.police-brand img { width: 40px; height: 40px; border: 1px solid rgba(255,255,255,.55); border-radius: 8px; box-shadow: none; }
+.police-brand img { width: 40px; height: 40px; padding: 3px; object-fit: contain; object-position: center; border: 1px solid rgba(255,255,255,.55); border-radius: 8px; background: #fff; box-shadow: none; }
 .police-brand span, .police-mode span { min-width: 0; display: grid; gap: 2px; }
 .police-brand strong { font-family: "Be Vietnam Pro", sans-serif; font-size: 13px; letter-spacing: -0.01em; }
 .police-brand small { display: none; }

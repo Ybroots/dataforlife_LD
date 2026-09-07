@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useRef, useState } from 'react';
 import { Eye, EyeOff, LogIn, ShieldCheck, X } from 'lucide-react';
 import { ApiError, signInOfficer } from '../api';
 import type { WorkflowActor } from '../types';
-import directoryLogoUrl from '../../../../assets/images/logo-128.png';
+import directoryLogoUrl from '../../../../assets/images/images.png';
 
 interface PoliceLoginCardProps {
   onSuccess: (actor: WorkflowActor) => void;

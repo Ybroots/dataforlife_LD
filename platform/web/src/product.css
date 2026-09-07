@@ -34,7 +34,7 @@ input, textarea, select { accent-color: var(--color-primary); }
 /* Original red identity, with the refined spacing and restrained controls. */
 .topbar, .police-topbar { color: #fff; background: var(--color-primary); border-bottom: 1px solid var(--color-primary-deep); box-shadow: none; gap: 12px; }
 .topbar { padding-inline: 20px; }
-.brand-mark { width: 36px; height: 36px; flex-basis: 36px; border: 0; border-radius: 6px; box-shadow: none; }
+.brand-mark { width: 40px; height: 40px; flex-basis: 40px; border: 1px solid rgba(255,255,255,.58); border-radius: 8px; background: #fff; box-shadow: none; }
 .brand-copy strong { font-size: 15px; font-weight: 600; letter-spacing: 0; }
 .brand-copy span { color: #fff; font-size: 12px; }
 .brand-copy .brand-title-full, .brand-copy .brand-title-compact { display: inline; font: inherit; color: inherit; }
@@ -46,7 +46,7 @@ input, textarea, select { accent-color: var(--color-primary); }
 .topbar-icon-btn:hover, .topbar-icon-btn[aria-pressed="true"] { background: var(--color-primary-deep); border-color: #fff; }
 .topbar button:focus-visible, .police-topbar button:focus-visible { outline-color: #fff; }
 .police-brand { color: #fff; }
-.police-brand img { box-shadow: none; border: 0; }
+.police-brand img { border: 1px solid rgba(255,255,255,.58); background: #fff; box-shadow: none; }
 .police-brand strong { font-size: 15px; font-weight: 600; }
 .notification-button > span, .citizen-notification-count { background: var(--color-primary); color: #fff; border-color: #fff; font-size: 11px; }
 
@@ -157,7 +157,7 @@ input, textarea, select { accent-color: var(--color-primary); }
 .login-screen, .police-login-screen, .citizen-login-gate { background: var(--color-canvas); color: var(--color-ink); height: 100dvh; }
 .login-screen-inner { gap: 20px; }
 .login-brand, .officer-login-header, .citizen-inline-login-header, .police-login-brand { color: var(--color-ink); }
-.login-brand-logo img { width: 52px; height: 52px; border-radius: 8px; box-shadow: none; }
+.login-brand-logo img { width: 64px; height: 64px; border-radius: 10px; box-shadow: none; }
 .login-brand-text span, .login-role-heading, .role-card-body span, .role-card-arrow,
 .login-divider span, .vneid-notice, .login-footer p, .officer-login-lead, .officer-login-header p,
 .officer-password-field, .officer-login-form label, .officer-password-wrap > button,
@@ -277,7 +277,7 @@ input, textarea, select { accent-color: var(--color-primary); }
 @media (max-width: 1023px) {
   :root { --topbar-height: calc(56px + var(--safe-top)); --mobile-tabs-height: calc(60px + var(--safe-bottom)); }
   .topbar { padding: var(--safe-top) max(12px,var(--safe-right)) 0 max(12px,var(--safe-left)); gap: 8px; }
-  .brand-mark { width: 32px; height: 32px; flex-basis: 32px; }
+  .brand-mark { width: 36px; height: 36px; flex-basis: 36px; }
   .brand-copy strong { font-size: 13px; }
   .topbar-actions { gap: 8px; }
   .topbar .citizen-login-trigger { display: none; }
