@@ -1,4 +1,50 @@
-import type { StyleSpecification } from 'maplibre-gl';
+import type { Map as MapLibreMap, StyleSpecification } from 'maplibre-gl';
+
+type MapFilter = Exclude<ReturnType<MapLibreMap['getFilter']>, void>;
+
+const HIDDEN_PLACE_LABELS = [
+  'hoàng sa',
+  'quần đảo hoàng sa',
+  'hoang sa',
+  'quan dao hoang sa',
+  'paracel islands',
+  'trường sa',
+  'quần đảo trường sa',
+  'truong sa',
+  'quan dao truong sa',
+  'spratly islands',
+] as const;
+
+const PLACE_NAME_PROPERTIES = ['name', 'name:vi', 'name_vi', 'name:en', 'name_en', 'name:latin'] as const;
+
+function createHiddenPlaceLabelFilter(): MapFilter {
+  return [
+    '!',
+    [
+      'any',
+      ...PLACE_NAME_PROPERTIES.map((property) => [
+        'in',
+        ['downcase', ['to-string', ['get', property]]],
+        ['literal', HIDDEN_PLACE_LABELS],
+      ]),
+    ],
+  ] as MapFilter;
+}
+
+/**
+ * Keeps the two requested offshore place labels out of any provider symbol
+ * layer without hiding boundaries, water, roads or application markers.
+ */
+export function suppressHiddenPlaceLabels(
+  map: Pick<MapLibreMap, 'getStyle' | 'getFilter' | 'setFilter'>,
+): void {
+  const exclusion = createHiddenPlaceLabelFilter();
+  for (const layer of map.getStyle().layers ?? []) {
+    if (layer.type !== 'symbol' || !layer.layout || !('text-field' in layer.layout)) continue;
+    const existing = map.getFilter(layer.id);
+    map.setFilter(layer.id, existing ? ['all', existing, exclusion] as MapFilter : exclusion);
+  }
+}
 
 /**
  * Public, keyless basemap used by every citizen workflow.

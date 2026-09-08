@@ -6,7 +6,7 @@ import type { GeoJSONSource, Map as MapLibreMap, MapMouseEvent } from 'maplibre-
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { buildCitizenMapPoints, buildPublicAlertPoints, pointsWithinZone, type CitizenMapPoint } from '../citizen-map-points';
 import { listPublicAlerts } from '../api';
-import { createPublicMapStyle } from '../map-style';
+import { createPublicMapStyle, suppressHiddenPlaceLabels } from '../map-style';
 import type { AreaLookup, AreaOverview, Hotline, PublicAlert } from '../types';
 
 interface MapPaneProps {
@@ -226,6 +226,7 @@ export function MapPane({ area, overview, onAreaSelect, selectedPosition, onCoor
       window.clearTimeout(loadTimeout);
       setTileWarning(false);
       containerRef.current?.setAttribute('data-map-loaded', 'true');
+      suppressHiddenPlaceLabels(map);
       map.addSource(PROVINCE_SOURCE_ID, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
       map.addLayer({ id: PROVINCE_FILL_ID, type: 'fill', source: PROVINCE_SOURCE_ID,
         paint: { 'fill-color': '#667782', 'fill-opacity': 0.06 } });
