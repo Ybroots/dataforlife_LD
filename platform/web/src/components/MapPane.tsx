@@ -6,7 +6,7 @@ import type { GeoJSONSource, Map as MapLibreMap, MapMouseEvent } from 'maplibre-
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { buildCitizenMapPoints, buildPublicAlertPoints, pointsWithinZone, type CitizenMapPoint } from '../citizen-map-points';
 import { listPublicAlerts } from '../api';
-import { createPublicMapStyle, suppressHiddenPlaceLabels } from '../map-style';
+import { addOffshorePlaceLabels, createPublicMapStyle } from '../map-style';
 import type { AreaLookup, AreaOverview, Hotline, PublicAlert } from '../types';
 
 interface MapPaneProps {
@@ -18,6 +18,8 @@ interface MapPaneProps {
   showDemoAlerts: boolean;
   hotlines: Hotline[];
   onOpenSos: () => void;
+  toolMenuOpen: boolean;
+  onToolMenuOpenChange: (open: boolean) => void;
 }
 
 const SOURCE_ID = 'verified-area';
@@ -89,7 +91,7 @@ function telHref(phone: string): string {
   return `tel:${phone.replace(/[^0-9+]/g, '')}`;
 }
 
-export function MapPane({ area, overview, onAreaSelect, selectedPosition, onCoordinateSelect, showDemoAlerts, onOpenSos }: MapPaneProps) {
+export function MapPane({ area, overview, onAreaSelect, selectedPosition, onCoordinateSelect, showDemoAlerts, onOpenSos, toolMenuOpen, onToolMenuOpenChange }: MapPaneProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const onCoordinateSelectRef = useRef(onCoordinateSelect);
@@ -100,7 +102,6 @@ export function MapPane({ area, overview, onAreaSelect, selectedPosition, onCoor
   const demoStationMarkersRef = useRef<maplibregl.Marker[]>([]);
   const activePopupRef = useRef<maplibregl.Popup | null>(null);
   const [tileWarning, setTileWarning] = useState(false);
-  const [toolMenuOpen, setToolMenuOpen] = useState(false);
   const [creditsOpen, setCreditsOpen] = useState(false);
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState('');
@@ -147,7 +148,7 @@ export function MapPane({ area, overview, onAreaSelect, selectedPosition, onCoor
     if (toggle && popup.isOpen()) { closePointPopup(); return; }
     closePointPopup();
     setSelectedServiceAreaCode(point.serviceAreaCode);
-    setToolMenuOpen(false);
+    onToolMenuOpenChange(false);
     activePopupRef.current = popup;
     setActivePointId(point.id);
     popup.setLngLat([point.longitude, point.latitude]).addTo(map);
@@ -158,7 +159,7 @@ export function MapPane({ area, overview, onAreaSelect, selectedPosition, onCoor
       offset: mobile ? [0, -rect.height * 0.23] : [Math.min(180, rect.width * 0.2), 70],
       duration: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 260,
     });
-  }, [closePointPopup]);
+  }, [closePointPopup, onToolMenuOpenChange]);
 
   const registerPopup = useCallback((point: CitizenMapPoint, content: HTMLElement) => {
     const popup = new maplibregl.Popup({
@@ -204,11 +205,11 @@ export function MapPane({ area, overview, onAreaSelect, selectedPosition, onCoor
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
       if (activePopupRef.current) closePointPopup();
-      else { setSelectedServiceAreaCode(null); setToolMenuOpen(false); }
+      else { setSelectedServiceAreaCode(null); onToolMenuOpenChange(false); }
     };
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
-  }, [closePointPopup]);
+  }, [closePointPopup, onToolMenuOpenChange]);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -226,7 +227,7 @@ export function MapPane({ area, overview, onAreaSelect, selectedPosition, onCoor
       window.clearTimeout(loadTimeout);
       setTileWarning(false);
       containerRef.current?.setAttribute('data-map-loaded', 'true');
-      suppressHiddenPlaceLabels(map);
+      addOffshorePlaceLabels(map);
       map.addSource(PROVINCE_SOURCE_ID, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
       map.addLayer({ id: PROVINCE_FILL_ID, type: 'fill', source: PROVINCE_SOURCE_ID,
         paint: { 'fill-color': '#667782', 'fill-opacity': 0.06 } });
@@ -308,7 +309,7 @@ export function MapPane({ area, overview, onAreaSelect, selectedPosition, onCoor
       if (typeof serviceAreaCode === 'string' && serviceAreaCode) {
         closePointPopup();
         setSelectedServiceAreaCode(serviceAreaCode);
-        setToolMenuOpen(false);
+        onToolMenuOpenChange(false);
         return;
       }
       closePointPopup();
@@ -337,7 +338,7 @@ export function MapPane({ area, overview, onAreaSelect, selectedPosition, onCoor
       map.remove();
       mapRef.current = null;
     };
-  }, []);
+  }, [onToolMenuOpenChange]);
 
   useEffect(() => {
     // The directory is an overlay: the map stays visible and must still resize.
@@ -665,7 +666,7 @@ export function MapPane({ area, overview, onAreaSelect, selectedPosition, onCoor
   const selectZone = (code: string) => {
     closePointPopup();
     setSelectedServiceAreaCode(code);
-    setToolMenuOpen(false);
+    onToolMenuOpenChange(false);
     const zone = area?.serviceAreas.find((candidate) => candidate.code === code);
     const map = mapRef.current;
     if (!zone || !map) return;
@@ -689,7 +690,7 @@ export function MapPane({ area, overview, onAreaSelect, selectedPosition, onCoor
       <button
         className="map-tool-trigger"
         type="button"
-        onClick={() => { closePointPopup(); setToolMenuOpen((open) => !open); }}
+        onClick={() => { closePointPopup(); onToolMenuOpenChange(!toolMenuOpen); }}
         aria-expanded={toolMenuOpen}
         aria-controls="map-tool-menu"
         aria-label="Mở tùy chọn hiển thị bản đồ"

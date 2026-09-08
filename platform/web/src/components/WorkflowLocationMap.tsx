@@ -3,7 +3,7 @@ import * as maplibregl from '../maplibre-runtime';
 import type { Map as MapLibreMap, MapMouseEvent } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { MapPinned } from 'lucide-react';
-import { createPublicMapStyle, suppressHiddenPlaceLabels } from '../map-style';
+import { addOffshorePlaceLabels, createPublicMapStyle } from '../map-style';
 
 interface WorkflowLocationMapProps {
   position: { latitude: number; longitude: number } | null;
@@ -31,7 +31,7 @@ export function WorkflowLocationMap({ position, onSelect, emergency = false }: W
       style: createPublicMapStyle(),
     });
     map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
-    map.on('load', () => suppressHiddenPlaceLabels(map));
+    map.on('load', () => addOffshorePlaceLabels(map));
     map.on('click', (event: MapMouseEvent) => onSelectRef.current({ latitude: event.lngLat.lat, longitude: event.lngLat.lng }));
     mapRef.current = map;
     return () => {

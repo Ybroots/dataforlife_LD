@@ -1,49 +1,23 @@
+import * as maplibregl from './maplibre-runtime';
 import type { Map as MapLibreMap, StyleSpecification } from 'maplibre-gl';
 
-type MapFilter = Exclude<ReturnType<MapLibreMap['getFilter']>, void>;
-
-const HIDDEN_PLACE_LABELS = [
-  'hoàng sa',
-  'quần đảo hoàng sa',
-  'hoang sa',
-  'quan dao hoang sa',
-  'paracel islands',
-  'trường sa',
-  'quần đảo trường sa',
-  'truong sa',
-  'quan dao truong sa',
-  'spratly islands',
+export const OFFSHORE_PLACE_LABELS = [
+  { id: 'truong-sa', name: 'Quần đảo Trường Sa', latitude: 10.722304537073676, longitude: 115.84047241412652 },
+  { id: 'hoang-sa', name: 'Quần đảo Hoàng Sa', latitude: 16.642258074877642, longitude: 112.75350799728493 },
 ] as const;
 
-const PLACE_NAME_PROPERTIES = ['name', 'name:vi', 'name_vi', 'name:en', 'name_en', 'name:latin'] as const;
-
-function createHiddenPlaceLabelFilter(): MapFilter {
-  return [
-    '!',
-    [
-      'any',
-      ...PLACE_NAME_PROPERTIES.map((property) => [
-        'in',
-        ['downcase', ['to-string', ['get', property]]],
-        ['literal', HIDDEN_PLACE_LABELS],
-      ]),
-    ],
-  ] as MapFilter;
-}
-
-/**
- * Keeps the two requested offshore place labels out of any provider symbol
- * layer without hiding boundaries, water, roads or application markers.
- */
-export function suppressHiddenPlaceLabels(
-  map: Pick<MapLibreMap, 'getStyle' | 'getFilter' | 'setFilter'>,
-): void {
-  const exclusion = createHiddenPlaceLabelFilter();
-  for (const layer of map.getStyle().layers ?? []) {
-    if (layer.type !== 'symbol' || !layer.layout || !('text-field' in layer.layout)) continue;
-    const existing = map.getFilter(layer.id);
-    map.setFilter(layer.id, existing ? ['all', existing, exclusion] as MapFilter : exclusion);
-  }
+/** Adds the two required labels without depending on provider glyphs or style layers. */
+export function addOffshorePlaceLabels(map: MapLibreMap): maplibregl.Marker[] {
+  return OFFSHORE_PLACE_LABELS.map((place) => {
+    const label = document.createElement('span');
+    label.className = 'offshore-place-label';
+    label.dataset.offshorePlaceLabel = place.id;
+    label.textContent = place.name;
+    label.setAttribute('aria-label', place.name);
+    return new maplibregl.Marker({ element: label, anchor: 'center' })
+      .setLngLat([place.longitude, place.latitude])
+      .addTo(map);
+  });
 }
 
 /**

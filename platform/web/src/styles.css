@@ -374,6 +374,11 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
 .map-pane { position: relative; min-width: 0; overflow: hidden; background: #dce5e7; }
 .map-loading { display: flex; align-items: center; justify-content: center; gap: 10px; color: #214a5a; }
 .map-pane > .map-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.offshore-place-label {
+  color: #294f60; font-family: "Be Vietnam Pro", "Segoe UI", sans-serif; font-size: 12px; font-weight: 700;
+  line-height: 1.25; letter-spacing: .01em; white-space: nowrap; pointer-events: none;
+  text-shadow: -1px -1px 0 rgba(255,255,255,.94), 1px -1px 0 rgba(255,255,255,.94), -1px 1px 0 rgba(255,255,255,.94), 1px 1px 0 rgba(255,255,255,.94);
+}
 .map-pane:has(.map-zone-panel) .map-credits { top: 18px; bottom: auto; left: 76px; }
 .map-pane[data-tools-open="true"] .map-zone-panel { visibility: hidden; }
 .map-tool-trigger {

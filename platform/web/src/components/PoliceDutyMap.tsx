@@ -4,7 +4,7 @@ import * as maplibregl from '../maplibre-runtime';
 import type { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { getOfficerIncident, getOfficerSos, listOperationalMapPoints, lookupByCode } from '../api';
-import { createPublicMapStyle, suppressHiddenPlaceLabels } from '../map-style';
+import { addOffshorePlaceLabels, createPublicMapStyle } from '../map-style';
 import type { AreaLookup, Incident, OfficerQueueItem, OperationalMapPoint, SosEvent } from '../types';
 
 interface PoliceDutyMapProps {
@@ -166,7 +166,7 @@ export function PoliceDutyMap({ active, localityCode, queue, onBackToQueue, onOp
     map.dragRotate.disable();
     map.touchZoomRotate.disableRotation();
     map.on('load', () => {
-      suppressHiddenPlaceLabels(map);
+      addOffshorePlaceLabels(map);
       map.addSource(AREA_SOURCE_ID, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
       map.addSource(SERVICE_SOURCE_ID, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
       map.addSource(OUTSIDE_MASK_SOURCE_ID, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });

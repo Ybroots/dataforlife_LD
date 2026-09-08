@@ -73,6 +73,8 @@ export default function App() {
   const [activeFeature, setActiveFeature] = useState<FeatureId>(featureFromUrl);
   const [featureMenuOpen, setFeatureMenuOpen] = useState(false);
   const [showDemoAlerts, setShowDemoAlerts] = useState(false);
+  const [mapToolsOpen, setMapToolsOpen] = useState(false);
+  const [searchResultsOpen, setSearchResultsOpen] = useState(false);
   const [hotlines, setHotlines] = useState<Hotline[]>([]);
   const [policeSession, setPoliceSession] = useState<WorkflowActor | null>(null);
   const [policeSessionChecking, setPoliceSessionChecking] = useState(policePortalRequested);
@@ -91,6 +93,7 @@ export default function App() {
   const requestId = useRef(0);
   const lookupRequestId = useRef(0);
   const lookupPanelRef = useRef<HTMLElement | null>(null);
+  const areaSearchRef = useRef<HTMLInputElement | null>(null);
   const statusRegionRef = useRef<HTMLDivElement | null>(null);
   const resultAnchorRef = useRef<HTMLDivElement | null>(null);
 
@@ -284,6 +287,8 @@ export default function App() {
 
   const chooseArea = async (item: AreaSummary) => {
     setQuery(item.name);
+    setSearchResultsOpen(false);
+    setMapToolsOpen(false);
     await selectAreaCode(item.code);
   };
 
@@ -291,6 +296,7 @@ export default function App() {
     setQuery('');
     setSuggestions([]);
     setSearchSettled(false);
+    setSearchResultsOpen(false);
   };
 
   const updateSearch = (value: string) => {
@@ -299,7 +305,16 @@ export default function App() {
     setError(null);
     setQuery(value);
     setSearchSettled(false);
+    setSearchResultsOpen(true);
+    setMapToolsOpen(false);
   };
+
+  const changeMapTools = useCallback((open: boolean) => {
+    setMapToolsOpen(open);
+    if (!open) return;
+    setSearchResultsOpen(false);
+    areaSearchRef.current?.blur();
+  }, []);
 
   const navigateToFeature = useCallback((feature: FeatureId) => {
     const url = new URL(window.location.href);
@@ -428,10 +443,12 @@ export default function App() {
                 <Search size={18} aria-hidden="true" />
                 <input
                   id="area-search"
+                  ref={areaSearchRef}
                   name="area-search"
                   type="search"
                   autoComplete="off"
                   value={query}
+                  onFocus={() => { setSearchResultsOpen(true); setMapToolsOpen(false); }}
                   onChange={(event) => updateSearch(event.target.value)}
                   placeholder="Tìm xã/phường hoặc mã địa bàn…"
                   aria-controls="area-suggestions"
@@ -444,6 +461,7 @@ export default function App() {
               </div>
               <div className="province-navigation">
                 <select aria-label="Chọn xã/phường" value={area?.code ?? ''} disabled={!overview}
+                  onFocus={() => setMapToolsOpen(false)}
                   onChange={event => { if (event.target.value) void selectAreaCode(event.target.value); else showProvince(); }}>
                   <option value="">{overview ? `Toàn tỉnh Lâm Đồng · ${overview.features.length} xã/phường` : overviewError ? 'Chưa tải được danh sách địa bàn' : 'Đang tải danh sách địa bàn…'}</option>
                   {overview?.features.map(feature => <option key={feature.id} value={feature.id}>{feature.properties.name}</option>)}
@@ -452,7 +470,7 @@ export default function App() {
               </div>
               {overviewError && <div className="overview-error" role="alert">Chưa tải được ranh giới toàn tỉnh. <button type="button" onClick={() => setOverviewAttempt(value => value + 1)}>Thử lại</button></div>}
               {!area && overview && <p className="province-hint">Chạm ranh giới để xem địa bàn.</p>}
-              {(suggestions.length > 0 || searching) && (
+              {searchResultsOpen && (suggestions.length > 0 || searching) && (
                 <div className="suggestions" id="area-suggestions" role="listbox" aria-label="Kết quả tìm địa bàn">
                   {searching && suggestions.length === 0 ? (
                     <div className="suggestion-loading">Đang tìm…</div>
@@ -464,7 +482,7 @@ export default function App() {
                   ))}
                 </div>
               )}
-              {searchSettled && !searching && suggestions.length === 0 && query.trim().length >= 2 && (
+              {searchResultsOpen && searchSettled && !searching && suggestions.length === 0 && query.trim().length >= 2 && (
                 <p className="search-empty" role="status">Không tìm thấy địa bàn phù hợp. Hãy kiểm tra tên hoặc thử mã địa bàn.</p>
               )}
             </div>
@@ -509,6 +527,8 @@ export default function App() {
                 showDemoAlerts={showDemoAlerts}
                 hotlines={hotlines}
                 onOpenSos={() => navigateToFeature('sos')}
+                toolMenuOpen={mapToolsOpen}
+                onToolMenuOpenChange={changeMapTools}
               />
             </Suspense>
           )}
